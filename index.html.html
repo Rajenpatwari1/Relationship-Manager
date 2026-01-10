@@ -466,7 +466,7 @@
         }
 
         /* CTA buttons */
-        .email-link, .whatsapp-button {
+        .email-link, .whatsapp-button, .google-form-button {
             box-shadow: 0 5px 15px rgba(0,0,0,0.3);
             transition: all 0.3s ease-in-out;
             font-size: 1.125rem; /* Slightly larger buttons */
@@ -478,6 +478,10 @@
         }
         .whatsapp-button:hover {
             box-shadow: 0 8px 20px rgba(74, 222, 128, 0.6); /* Stronger green glow for WhatsApp */
+            transform: translateY(-3px);
+        }
+        .google-form-button:hover {
+            box-shadow: 0 8px 20px rgba(99, 102, 241, 0.6); /* Indigo glow for Google Form */
             transform: translateY(-3px);
         }
     </style>
@@ -798,12 +802,16 @@
                 <h2 class="text-4xl sm:text-5xl font-extrabold font-montserrat mb-6">Ready to Make an Impact?</h2>
                 <p class="text-lg sm:text-xl text-gray-300 mb-10">
                 </p>
-                <div class="flex flex-col sm:flex-row justify-center space-y-4 sm:space-y-0 sm:space-x-6">
-                    <a href="mailto:hr@onepaper.in" class="email-link bg-pink-400 hover:bg-pink-500 text-gray-900 font-bold py-3 px-8 rounded-full flex items-center justify-center">
+                <!-- Added 'flex-wrap' and 'gap-4' for better responsiveness with 3 buttons -->
+                <div class="flex flex-col lg:flex-row justify-center items-center gap-6">
+                    <a href="mailto:hr@onepaper.in" class="email-link bg-pink-400 hover:bg-pink-500 text-gray-900 font-bold py-3 px-8 rounded-full flex items-center justify-center w-full sm:w-auto">
                         <i class="fas fa-envelope mr-3"></i> Email Your Resume
                     </a>
-                    <a href="https://wa.me/918086981567?text=I%27m%20interested%20in%20the%20Relationship%20Manager%20position." target="_blank" class="whatsapp-button bg-green-500 hover:bg-green-600 text-white font-bold py-3 px-8 rounded-full flex items-center justify-center">
+                    <a href="https://wa.me/918086981567?text=I%27m%20interested%20in%20the%20Relationship%20Manager%20position." target="_blank" class="whatsapp-button bg-green-500 hover:bg-green-600 text-white font-bold py-3 px-8 rounded-full flex items-center justify-center w-full sm:w-auto">
                         <i class="fab fa-whatsapp mr-3"></i> Connect on WhatsApp
+                    </a>
+                    <a href="https://forms.gle/4gSuhxQdDjZXNfiRA" target="_blank" class="google-form-button bg-indigo-500 hover:bg-indigo-600 text-white font-bold py-3 px-8 rounded-full flex items-center justify-center w-full sm:w-auto">
+                        <i class="fab fa-google mr-3"></i> Register via Google Form
                     </a>
                 </div>
             </div>
