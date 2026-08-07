@@ -3,948 +3,1081 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Relationship Manager - OnePaper Research Analysts</title>
-    <!-- Font Awesome for icons -->
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <!-- Google Fonts - Inter for a modern look, Montserrat for headings -->
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Montserrat:wght@700;800;900&display=swap" rel="stylesheet">
-    <!-- Tailwind CSS CDN -->
+    <title>HR Overview</title>
     <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = { darkMode: 'class' }
+    </script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
     <style>
-        /* Custom styles for specific elements not easily achievable with direct Tailwind classes */
-        body {
-            font-family: 'Inter', sans-serif;
-            overflow-x: hidden; /* Prevent horizontal scroll due to animations */
-            background-color: #1a202c; /* Dark background */
-            padding-top: 60px; /* Space for the sticky TradingView widget at the top */
-            font-size: 0.9rem; /* Reduced base font size for the entire page */
-        }
-
-        /* Smooth scrolling */
-        html {
-            scroll-behavior: smooth;
-        }
-
-        /* Header banner background image overlay */
-        .header-banner::before {
-            content: "";
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: url('https://images.unsplash.com/photo-1553877522-43269d4ea984?ixlib=rb-4.0.3&auto=format&fit=crop&w=1600&q=80') center/cover;
-            opacity: 0.08;
-            z-index: 0; /* Ensure it's behind content */
-        }
-
-        /* Detail card bottom border for hover effect (repurposed for inner cards) */
-        /* This specific ::after is now overridden by more specific styles below for .section-card .detail-card */
-        .detail-card::after {
-            content: "";
-            position: absolute;
-            bottom: 0;
-            left: 0;
-            width: 100%;
-            height: 5px;
-            background: linear-gradient(to right, #000000, #333333); /* Darker gradient */
-            transition: all 0.3s ease-in-out;
-        }
-        .detail-card:hover::after {
-            background: linear-gradient(to right, #fbcfe8, #a78bfa); /* Pink/purple gradient on hover */
-        }
-
-        /* Career path container background image overlay */
-        .career-path-container::before {
-            content: "";
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: url('https://images.unsplash.com/photo-1521737852567-6949f3f9f2b5?ixlib=rb-4.0.3&auto=format&fit=crop&w=1600&q=80') center/cover;
-            opacity: 0.05;
-            z-index: 0;
-        }
-
-        /* CTA section top border */
-        .cta-section::before {
-            content: "";
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 5px;
-            background: linear-gradient(to right, #000000, #fbcfe8); /* Baby pink */
-        }
-
-        /* Keyframe animations */
-        @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(20px); }
-            to { opacity: 1; transform: translateY(0); }
-        }
-
-        @keyframes slideInLeft {
-            from { opacity: 0; transform: translateX(-50px); }
-            to { opacity: 1; transform: translateX(0); }
-        }
-
-        @keyframes popIn {
-            0% { transform: scale(0.5); opacity: 0; }
-            80% { transform: scale(1.1); opacity: 1; }
-            100% { transform: scale(1); }
-        }
-
-        @keyframes pulse {
-            0% { transform: scale(1); }
-            50% { transform: scale(1.05); }
-            100% { transform: scale(1); }
-        }
-
-        @keyframes checkmarkAnim {
-            0% { transform: scale(0); opacity: 0; }
-            70% { transform: scale(1.2); opacity: 1; }
-            100% { transform: scale(1); }
-        }
-
-        @keyframes popInSlow {
-            0% { transform: scale(0.8); opacity: 0; }
-            100% { transform: scale(1); opacity: 1; }
-        }
-
-        /* Apply animations on scroll */
-        .animate-on-scroll {
-            opacity: 0;
-            transform: translateY(20px);
-            transition: opacity 0.8s ease-out, transform 0.8s ease-out;
-        }
-        .animate-on-scroll.is-visible {
-            opacity: 1;
-            transform: translateY(0);
-        }
-        .animate-on-scroll.is-visible .detail-card {
-            animation: popIn 0.6s ease-out forwards;
-        }
-        .animate-on-scroll.is-visible .responsibility-item {
-            animation: slideInLeft 0.7s ease-out forwards;
-        }
-        .animate-on-scroll.is-visible .responsibility-item i {
-            animation: checkmarkAnim 0.5s ease-out forwards;
-        }
-        .animate-on-scroll.is-visible .section-header-decoration {
-            animation: popInSlow 0.8s ease-out forwards;
-        }
-
-
-        /* Three.js canvas styling */
-        #three-canvas {
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            z-index: 1; /* Below text content */
-            opacity: 0.3; /* Subtle background effect */
-        }
-
-        /* TradingView widget styling */
-        .tradingview-widget-container {
-            width: 100%;
-            height: 60px; /* Adjust height as needed */
-            overflow: hidden;
-            background-color: #1a202c; /* Match body background */
-            position: sticky;
-            top: 0; /* Sticky to the top */
-            z-index: 50; /* Ensure it's above other content when scrolling */
-            border-bottom: 1px solid rgba(251, 191, 232, 0.2); /* Light pink border */
-            box-shadow: 0 2px 5px rgba(0,0,0,0.3); /* Subtle shadow */
-        }
-        .tradingview-widget-container iframe {
-            width: 100%;
-            height: 100%;
-            border: none;
-        }
-
-        /* Career Path Styling */
-        .career-path-container-new {
-            position: relative;
-            padding: 2rem 1rem;
-            background: linear-gradient(to bottom, #2c313c, #1a202c); /* Darker gradient background for the container */
-            border-radius: 1.5rem;
-            box-shadow: 0 8px 20px rgba(0,0,0,0.4);
-            overflow: hidden;
-        }
-
-        .career-path-container-new::before {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: 50%;
-            transform: translateX(-50%);
-            width: 4px; /* Vertical line */
-            height: 100%;
-            background: linear-gradient(to bottom, #a78bfa, #fbcfe8); /* Blue-pink gradient line */
-            z-index: 0;
-        }
-
-        .career-path-steps-new {
-            display: flex;
-            flex-direction: column;
-            align-items: center; /* Center all items */
-            position: relative;
-            z-index: 1; /* Ensure steps are above the line */
-        }
-
-        .career-step-new {
-            position: relative;
-            background: linear-gradient(to right, #3a404a, #2c313c); /* Darker gradient for steps */
-            border: 1px solid rgba(167, 139, 250, 0.4); /* Blue border */
-            border-radius: 0.75rem; /* Slightly rounded rectangle */
-            padding: 1rem 1.5rem;
-            margin: 1.5rem 0; /* Vertical spacing */
-            box-shadow: 0 6px 15px rgba(0,0,0,0.4);
-            transition: all 0.4s ease-in-out;
-            color: #e2e8f0;
-            font-weight: 600;
-            text-align: center;
-            max-width: 90%; /* Max width for mobile */
-            width: fit-content; /* Adjust width to content */
-            min-width: 200px; /* Minimum width */
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 0.75rem; /* Space between icon and text */
-            font-size: 0.875rem; /* Base font size for career steps (text-sm equivalent) */
-        }
-
-        .career-step-new:hover {
-            transform: translateY(-8px) scale(1.03);
-            box-shadow: 0 10px 25px rgba(0,0,0,0.6);
-            border-color: rgba(167, 139, 250, 0.8); /* Stronger blue border on hover */
-        }
-
-        .career-step-new .icon-wrapper {
-            background-color: #a78bfa; /* Blue background for icon */
-            color: #1a202c; /* Dark text for icon */
-            border-radius: 50%;
-            width: 40px;
-            height: 40px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 1.2rem;
-            box-shadow: 0 0 15px rgba(167, 139, 250, 0.8); /* Glow effect */
-            flex-shrink: 0;
-        }
-
-        .career-step-new::before {
-            content: '';
-            position: absolute;
-            top: 50%;
-            left: -15px; /* Position circle on the left of the step */
-            transform: translateY(-50%);
-            width: 15px;
-            height: 15px;
-            background: #a78bfa; /* Blue circle */
-            border-radius: 50%;
-            border: 3px solid #1a202c; /* Dark border to stand out from line */
-            box-shadow: 0 0 15px rgba(167, 139, 250, 0.8); /* Glow effect */
-            z-index: 2; /* Ensure circle is above line and step */
-        }
-
-        /* Remove alternating styles for desktop to ensure central alignment */
-        @media (min-width: 768px) {
-            .career-path-steps-new {
-                align-items: center; /* Ensure all items are centered */
-            }
-
-            .career-step-new {
-                max-width: 45%; /* Keep max width */
-                margin-left: auto; /* Center horizontally */
-                margin-right: auto; /* Center horizontally */
-                transform: translateX(0); /* Remove any horizontal offset */
-                font-size: 1rem; /* Slightly larger font size for desktop (text-base equivalent) */
-            }
-
-            .career-step-new:nth-child(odd),
-            .career-step-new:nth-child(even) {
-                align-self: center; /* Ensure all steps are centered */
-                margin-left: auto;
-                margin-right: auto;
-                transform: translateX(0); /* Remove any horizontal offset */
-            }
-
-            .career-step-new::before {
-                left: -15px; /* Always position circle on the left of the step */
-                right: auto; /* Reset right positioning */
-            }
-        }
-
-        /* New styles for the About OnePaper section */
-        .about-onepaper-section {
-            background: linear-gradient(to right, #2a303c, #1a202c); /* Darker gradient background */
-            border: 1px solid rgba(251, 191, 232, 0.1); /* Subtle pink border */
-            border-radius: 1rem; /* Rounded corners */
-            padding: 2.5rem; /* Increased padding */
-            box-shadow: 0 10px 20px rgba(0,0,0,0.4); /* More pronounced shadow */
-            position: relative;
-            overflow: hidden;
-        }
-
-        .about-onepaper-section::before {
-            content: "";
-            position: absolute;
-            top: -50px;
-            left: -50px;
-            width: 200px;
-            height: 200px;
-            background: radial-gradient(circle, rgba(251, 191, 232, 0.1) 0%, transparent 70%); /* Pink radial gradient top-left */
-            z-index: 0;
-        }
-
-        .about-onepaper-section::after {
-            content: "";
-            position: absolute;
-            bottom: -50px;
-            right: -50px;
-            width: 200px;
-            height: 200px;
-            background: radial-gradient(circle, rgba(167, 139, 250, 0.1) 0%, transparent 70%); /* Blue radial gradient bottom-right */
-            z-index: 0;
-        }
-
-        .about-onepaper-section h2 {
-            border-bottom: 4px solid #fbcfe8; /* Stronger pink border for heading */
-            padding-bottom: 1rem;
-            margin-bottom: 2rem;
-            font-size: 2.5rem; /* Larger heading */
-            color: #e2e8f0; /* Lighter text for heading */
-        }
-
-        .about-onepaper-section p {
-            color: #cbd5e0; /* Slightly lighter text for paragraphs */
-            font-size: 1.125rem; /* Slightly larger paragraph text */
-            line-height: 1.75;
-        }
-
-        /* --- New styles for Position Details, Responsibilities, Skills, Career, Why Join, Eligibility --- */
-        .section-card {
-            background-color: #252932; /* A deeper, more solid dark background for the main card */
-            border: 2px solid transparent; /* Start with transparent border */
-            border-image: linear-gradient(to right, #fbcfe8, #a78bfa) 1; /* Gradient border */
-            border-radius: 1.5rem;
-            padding: 2.5rem; /* Increased padding */
-            box-shadow: 0 15px 30px rgba(0,0,0,0.5); /* Stronger shadow */
-            position: relative;
-            overflow: hidden;
-            transition: all 0.4s ease-in-out;
-        }
-
-        .section-card:hover {
-            transform: translateY(-8px) scale(1.01); /* More pronounced lift and slight scale */
-            box-shadow: 0 20px 40px rgba(0,0,0,0.7);
-            /* border-image is not easily reversible on hover with simple CSS, keeping it static for now */
-        }
-
-        .section-card h2 {
-            border-bottom: none; /* Remove previous border */
-            position: relative; /* For pseudo-element underline */
-            padding-bottom: 1rem;
-            margin-bottom: 2rem; /* More space below heading */
-            font-size: 2.5rem; /* Larger heading */
-            color: #e2e8f0;
-            text-shadow: 0 0 10px rgba(251, 191, 232, 0.2); /* Subtle text glow */
-        }
-
-        .section-card h2::after {
-            content: '';
-            position: absolute;
-            left: 0;
-            bottom: 0;
-            width: 80px; /* Short, prominent underline */
-            height: 4px;
-            background: linear-gradient(to right, #fbcfe8, #a78bfa); /* Pink-blue underline */
-            border-radius: 2px;
-        }
-
-        .section-card .detail-card {
-            background: linear-gradient(to bottom, #3a404a, #2c313c); /* Subtle gradient for inner cards */
-            border: 1px solid rgba(251, 191, 232, 0.3); /* Slightly more visible pink border */
-            border-radius: 1rem; /* Consistent rounded corners */
-            padding: 1.5rem; /* Increased padding */
-            box-shadow: 0 4px 12px rgba(0,0,0,0.3);
-            transition: all 0.3s ease-in-out;
-            overflow: hidden; /* For inner pseudo-elements if added later */
-        }
-
-        .section-card .detail-card:hover {
-            background: linear-gradient(to bottom, #4a504a, #3a404a); /* Darker gradient on hover */
-            transform: translateY(-5px); /* More noticeable lift */
-            box-shadow: 0 8px 20px rgba(0,0,0,0.5);
-            border-color: rgba(251, 191, 232, 0.7); /* More prominent pink border on hover */
-        }
-
-        .section-card .detail-card h4 {
-            color: #e2e8f0; /* Lighter text for better contrast */
-        }
-
-        .section-card .detail-card i {
-            color: #fbcfe8; /* Consistent pink for icons in detail/responsibility cards */
-            text-shadow: 0 0 8px rgba(251, 191, 232, 0.6); /* Stronger glow for icons */
-        }
-
-        .section-card .location-section {
-            background: linear-gradient(to bottom, #3a404a, #2c313c); /* Match inner card gradient */
-            border: 1px solid rgba(167, 139, 250, 0.3); /* Blue border for location */
-            border-radius: 1rem;
-            padding: 2rem; /* Increased padding */
-            box-shadow: 0 4px 12px rgba(0,0,0,0.3);
-            transition: all 0.3s ease-in-out;
-        }
-        .section-card .location-section:hover {
-            transform: translateY(-5px);
-            box-shadow: 0 8px 20px rgba(0,0,0,0.5);
-            border-color: rgba(167, 139, 250, 0.7);
-        }
-
-        .section-card .location-icon {
-            background-color: #a78bfa; /* Blue background for location icon */
-            color: #1a202c; /* Dark text for contrast */
-            box-shadow: 0 0 20px rgba(167, 139, 250, 0.8); /* Stronger blue glow */
-            animation: pulse 1.5s infinite ease-in-out; /* Add pulse animation */
-        }
-
-        .section-card .location-link {
-            background-color: #a78bfa; /* Blue button for maps */
-            color: #1a202c;
-            font-weight: bold;
-            box-shadow: 0 5px 15px rgba(167, 139, 250, 0.4);
-            transition: all 0.3s ease-in-out;
-        }
-        .section-card .location-link:hover {
-            background-color: #8b5cf6; /* Darker blue on hover */
-            box-shadow: 0 8px 20px rgba(167, 139, 250, 0.6);
-            transform: translateY(-3px);
-        }
-
-        /* Why Join OnePaper list items */
-        .why-join-list li {
-            background: linear-gradient(to right, #3a404a, #2c313c); /* Gradient for list items */
-            border: 1px solid rgba(251, 191, 232, 0.3);
-            border-radius: 0.75rem;
-            padding: 1rem 1.5rem;
-            transition: all 0.3s ease-in-out;
-        }
-        .why-join-list li:hover {
-            background: linear-gradient(to right, #4a504a, #3a404a);
-            transform: translateX(10px); /* More pronounced slide */
-            border-color: rgba(251, 191, 232, 0.7);
-            box-shadow: 0 6px 15px rgba(0,0,0,0.4);
-        }
-        .why-join-list i {
-            color: #a78bfa; /* Blue icons for why join */
-            text-shadow: 0 0 8px rgba(167, 139, 250, 0.6); /* Stronger glow */
-        }
-
-        /* Eligibility list items */
-        .eligibility-list li {
-            background: linear-gradient(to right, #3a404a, #2c313c);
-            border: 1px solid rgba(167, 139, 250, 0.3);
-            border-radius: 0.75rem;
-            padding: 1rem 1.5rem;
-            transition: all 0.3s ease-in-out;
-        }
-        .eligibility-list li:hover {
-            background: linear-gradient(to right, #4a504a, #3a404a);
-            transform: translateX(10px); /* More pronounced slide */
-            border-color: rgba(167, 139, 250, 0.7);
-            box-shadow: 0 6px 15px rgba(0,0,0,0.4);
-        }
-        .eligibility-list i {
-            color: #fbcfe8; /* Pink icons for eligibility */
-            text-shadow: 0 0 8px rgba(251, 191, 232, 0.6); /* Stronger glow */
-        }
-
-        /* CTA buttons */
-        .email-link, .whatsapp-button, .google-form-button {
-            box-shadow: 0 5px 15px rgba(0,0,0,0.3);
-            transition: all 0.3s ease-in-out;
-            font-size: 1.125rem; /* Slightly larger buttons */
-            padding: 0.75rem 1.5rem; /* More padding */
-        }
-        .email-link:hover {
-            box-shadow: 0 8px 20px rgba(251, 191, 232, 0.6); /* Stronger pink glow */
-            transform: translateY(-3px);
-        }
-        .whatsapp-button:hover {
-            box-shadow: 0 8px 20px rgba(74, 222, 128, 0.6); /* Stronger green glow for WhatsApp */
-            transform: translateY(-3px);
-        }
-        .google-form-button:hover {
-            box-shadow: 0 8px 20px rgba(99, 102, 241, 0.6); /* Indigo glow for Google Form */
-            transform: translateY(-3px);
-        }
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+        body { font-family: 'Inter', sans-serif; background-color: #f8fafc; transition: background-color 0.3s; }
+        .card { background: white; border-radius: 0.75rem; box-shadow: 0 1px 3px rgba(0,0,0,0.1); border: 1px solid #e2e8f0; padding: 1.5rem; transition: all 0.3s; }
+        canvas { max-height: 250px; }
+        /* Custom scrollbar for modals */
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
+        ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+        
+        /* Dark Mode Overrides */
+        html.dark body { background-color: #0f172a; color: #f1f5f9; }
+        html.dark .card { background-color: #1e293b; border-color: #334155; }
+        html.dark nav { background-color: #1e293b !important; border-color: #334155 !important; }
+        html.dark h1, html.dark h2, html.dark h3 { color: #f8fafc !important; }
+        html.dark .text-slate-900, html.dark .text-slate-800, html.dark .text-slate-700, html.dark .text-slate-600, html.dark .text-slate-500 { color: #cbd5e1 !important; }
+        html.dark .bg-slate-50, html.dark .bg-slate-100 { background-color: #0f172a !important; border-color: #334155 !important; }
+        html.dark .border-slate-200 { border-color: #334155 !important; }
+        html.dark th, html.dark td, html.dark tr, html.dark .border-b { border-color: #334155 !important; }
+        html.dark select, html.dark input { background-color: #1e293b !important; color: #f8fafc !important; border-color: #334155 !important; }
+        html.dark .bg-white { background-color: #1e293b !important; }
+        html.dark .hover\:bg-slate-50:hover { background-color: #334155 !important; }
+        html.dark .bg-blue-50\/50, html.dark .bg-blue-50\/20 { background-color: rgba(59, 130, 246, 0.15) !important; }
+        html.dark .bg-rose-50\/50, html.dark .bg-rose-50\/20 { background-color: rgba(244, 63, 94, 0.15) !important; }
+        html.dark .bg-amber-50\/50, html.dark .bg-amber-50\/20 { background-color: rgba(245, 158, 11, 0.15) !important; }
+        html.dark .bg-emerald-50\/50, html.dark .bg-emerald-50\/20 { background-color: rgba(16, 185, 129, 0.15) !important; }
+        html.dark .bg-blue-50 { background-color: rgba(59, 130, 246, 0.1) !important; }
+        html.dark .bg-emerald-50 { background-color: rgba(16, 185, 129, 0.1) !important; }
+        html.dark .bg-rose-50 { background-color: rgba(244, 63, 94, 0.1) !important; }
+        html.dark .bg-amber-50 { background-color: rgba(245, 158, 11, 0.1) !important; }
+        html.dark .text-blue-600 { color: #60a5fa !important; }
+        html.dark .text-blue-800 { color: #93c5fd !important; }
+        html.dark .text-rose-500, html.dark .text-rose-600 { color: #fb7185 !important; }
+        html.dark .text-amber-600 { color: #fbbf24 !important; }
+        html.dark .text-emerald-600 { color: #34d399 !important; }
+        html.dark .border-l-blue-500 { border-left-color: #3b82f6 !important; }
+        html.dark .border-l-rose-500 { border-left-color: #f43f5e !important; }
+        html.dark .border-l-amber-500 { border-left-color: #f59e0b !important; }
+        html.dark .border-l-emerald-500 { border-left-color: #10b981 !important; }
     </style>
 </head>
-<body class="bg-gray-900 text-gray-100">
-    <!-- TradingView Widget BEGIN - Moved to the very top and made sticky -->
-    <div class="tradingview-widget-container">
-        <div class="tradingview-widget-container__widget"></div>
-        <script type="text/javascript" src="https://s3.tradingview.com/external-embedding/embed-widget-ticker-tape.js" async>
-        {
-            "symbols": [
-            {
-                "proName": "FOREXCOM:SPXUSD",
-                "title": "S&P 500"
-            },
-            {
-                "proName": "FOREXCOM:NSXUSD",
-                "title": "US 100"
-            },
-            {
-                "proName": "FX_IDC:EURUSD",
-                "title": "EUR to USD"
-            },
-            {
-                "proName": "BITSTAMP:BTCUSD",
-                "title": "Bitcoin"
-            },
-            {
-                "proName": "BITSTAMP:ETHUSD",
-                "title": "Ethereum"
-            },
-            {
-                "description": "NIFTY 50",
-                "proName": "NSE:NIFTY"
-            },
-            {
-                "description": "BANK NIFTY",
-                "proName": "NSE:BANKNIFTY"
-            }
-            ],
-            "showSymbolLogo": true,
-            "theme": "dark",
-            "locale": "en"
-        }
-        </script>
-    </div>
-    <!-- TradingView Widget END -->
+<body class="text-slate-800 transition-colors duration-300">
 
-    <!-- Header Banner Section -->
-    <header class="header-banner relative bg-gray-800 text-white py-20 px-4 sm:px-6 lg:px-8 overflow-hidden">
-        <canvas id="three-canvas"></canvas>
-        <div class="relative z-10 max-w-7xl mx-auto text-center">
-            <h1 class="text-4xl sm:text-5xl lg:text-6xl font-extrabold leading-tight mb-4 font-montserrat animate-fade-in">
-                Become a Relationship Manager <br class="hidden sm:inline"> at <span class="text-pink-300">OnePaper Research Analysts</span>
-            </h1>
+    <nav class="bg-white border-b border-slate-200 px-6 pt-4 sticky top-0 z-40 transition-colors duration-300">
+        <div class="flex flex-col md:flex-row justify-between items-center gap-4 mb-4">
+            <div>
+                <h1 class="text-2xl font-bold text-slate-900">HR Overview</h1>
+                <div class="flex items-center gap-2 text-sm mt-1">
+                    <span id="connection-status" class="flex items-center gap-1 text-emerald-600 font-medium">
+                        <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+                        Live Data
+                    </span>
+                    <span id="row-count" class="text-slate-500"></span>
+                </div>
+            </div>
             
-            <!-- REMOVED APPLY NOW BUTTON FROM HERE AS REQUESTED -->
-            
+            <div class="flex flex-wrap items-center gap-3">
+                <button onclick="toggleDarkMode()" class="p-2 rounded-lg bg-slate-100 text-slate-600 hover:bg-slate-200 dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-slate-700 transition-colors" title="Toggle Dark Mode">
+                    <svg id="theme-icon" class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"></path></svg>
+                </button>
+
+                <button onclick="toggleFullScreen()" class="p-2 rounded-lg bg-slate-100 text-slate-600 hover:bg-slate-200 dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-slate-700 transition-colors" title="Toggle Full Screen">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4"></path></svg>
+                </button>
+                
+                <select id="time-filter" class="bg-slate-50 border border-slate-200 text-slate-700 rounded-lg px-4 py-2 text-sm font-medium focus:ring-2 focus:ring-blue-500 outline-none" onchange="applyFilters()">
+                    <option value="overall">Overall (All Time)</option>
+                </select>
+                
+                <button onclick="document.getElementById('upload-modal').classList.remove('hidden')" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors shadow-sm flex items-center gap-2">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"></path></svg>
+                    Connect Data
+                </button>
+            </div>
         </div>
-    </header>
 
-    <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
+        <!-- Tab Navigation -->
+        <div class="flex gap-6 border-b border-slate-200">
+            <button onclick="switchTab('sales')" id="tab-sales" class="pb-3 px-2 text-sm font-bold border-b-2 border-blue-600 text-blue-700 flex items-center gap-2 transition-colors">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 13.255A23.931 23.931 0 0112 15c-3.183 0-6.22-.62-9-1.745M16 6V4a2 2 0 00-2-2h-4a2 2 0 00-2 2v2m4 6h.01M5 20h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"></path></svg>
+                Sales Dept (Active)
+            </button>
+            <button onclick="switchTab('pipeline')" id="tab-pipeline" class="pb-3 px-2 text-sm font-medium border-b-2 border-transparent text-slate-500 hover:text-slate-700 flex items-center gap-2 transition-colors">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"></path></svg>
+                Hiring Pipeline
+            </button>
+        </div>
+    </nav>
 
-        <!-- About OnePaper Section -->
-        <section id="about-onepaper" class="about-onepaper-section relative text-center mb-20 animate-on-scroll">
-            <div class="relative z-10">
-                <h2 class="text-4xl font-extrabold font-montserrat mb-8">
-                    OnePaper Research Analysts Pvt. Ltd.
-                </h2>
-                <p class="mb-6">
-                    Founded in 2020, we are a dedicated intraday stock research firm providing precise, real-time market analysis to help clients make smart, confident trading decisions. Our focus is on accuracy, speed, and continuous improvement in research capabilities.
-                </p>
-                <p class="text-pink-300 font-semibold">
-                    <a href="https://www.onepaper.in" target="_blank" class="hover:underline">www.onepaper.in</a>
-                </p>
+    <!-- SALES DEPT CONTENT -->
+    <main id="sales-content" class="p-6 max-w-7xl mx-auto space-y-6 block">
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            <div class="card border-l-4 border-l-blue-500 flex flex-col justify-between cursor-pointer hover:bg-blue-50 transition-colors group" onclick="showGlobalActive()" title="Click to view all active employees">
+                <div class="flex justify-between items-start">
+                    <p class="text-sm font-medium text-slate-500 group-hover:text-blue-600 transition-colors">Active Employees</p>
+                    <svg class="w-4 h-4 text-slate-300 group-hover:text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path></svg>
+                </div>
+                <h3 id="metric-active" class="text-3xl font-bold text-slate-800 mt-2">-</h3>
+                <p class="text-xs text-slate-400 mt-2">Excluding Team Leaders</p>
             </div>
-        </section>
+            <div class="card border-l-4 border-l-rose-500 flex flex-col justify-between">
+                <p class="text-sm font-medium text-slate-500">Vacant Seats</p>
+                <h3 id="metric-vacant" class="text-3xl font-bold text-slate-800 mt-2">-</h3>
+                <p id="metric-capacity" class="text-xs text-slate-400 mt-2">Total Capacity: -</p>
+            </div>
+            <div class="card border-l-4 border-l-amber-500 flex flex-col justify-between">
+                <p class="text-sm font-medium text-slate-500">Attrition Rate</p>
+                <h3 id="metric-attrition" class="text-3xl font-bold text-slate-800 mt-2">-</h3>
+                <p class="text-xs text-slate-400 mt-2">Universal Formula</p>
+            </div>
+        </div>
 
-        <!-- Position Details Section -->
-        <section id="position-details" class="section-card mb-20 animate-on-scroll">
-            <div class="section-header-decoration w-16 h-2 rounded-full mx-auto mb-4 bg-gradient-to-r from-pink-300 to-purple-400"></div>
-            <h2 class="text-4xl font-extrabold font-montserrat mb-8">Position Details</h2>
-            <div class="grid md:grid-cols-2 gap-8">
-                <div class="detail-card flex items-center space-x-4">
-                    <div class="icon-wrapper text-pink-300 text-3xl">
-                        <i class="fas fa-briefcase"></i>
-                    </div>
-                    <div>
-                        <h4 class="text-xl font-semibold mb-1">Role</h4>
-                        <p class="text-gray-300">Relationship Manager</p>
-                    </div>
-                </div>
-                <div class="detail-card flex items-center space-x-4">
-                    <div class="icon-wrapper text-pink-300 text-3xl">
-                        <i class="fas fa-building"></i>
-                    </div>
-                    <div>
-                        <h4 class="text-xl font-semibold mb-1">Department</h4>
-                        <p class="text-gray-300">Sales & Client Relations</p>
-                    </div>
-                </div>
-                <!-- Removed Employment Type -->
-                <div class="detail-card flex items-center space-x-4">
-                    <div class="icon-wrapper text-pink-300 text-3xl">
-                        <i class="fas fa-calendar-alt"></i>
-                    </div>
-                    <div>
-                        <h4 class="text-xl font-semibold mb-1">Experience</h4>
-                        <p class="text-gray-300">Freshers welcome (with good learning attitude)</p>
-                    </div>
-                </div>
-                <div class="detail-card flex items-center space-x-4">
-                    <div class="icon-wrapper text-pink-300 text-3xl">
-                        <i class="fas fa-user-plus"></i>
-                    </div>
-                    <div>
-                        <h4 class="text-xl font-semibold mb-1">Joining</h4>
-                        <p class="text-gray-300">Immediate</p>
-                    </div>
-                </div>
-                <div class="detail-card flex items-center space-x-4">
-                    <div class="icon-wrapper text-pink-300 text-3xl">
-                        <i class="fas fa-clock"></i>
-                    </div>
-                    <div>
-                        <h4 class="text-xl font-semibold mb-1">Shift Timing</h4>
-                        <p class="text-gray-300">9:00 AM – 6:00 PM</p>
-                    </div>
-                </div>
-                <div class="detail-card flex items-center space-x-4">
-                    <div class="icon-wrapper text-pink-300 text-3xl">
-                        <i class="fas fa-rupee-sign"></i>
-                    </div>
-                    <div>
-                        <h4 class="text-xl font-semibold mb-1">Fixed Salary</h4>
-                        <p class="text-gray-300">₹20,000</p>
-                    </div>
-                </div>
-                <div class="detail-card flex items-center space-x-4">
-                    <div class="icon-wrapper text-pink-300 text-3xl">
-                        <i class="fas fa-money-bill-wave"></i>
-                    </div>
-                    <div>
-                        <h4 class="text-xl font-semibold mb-1">Incentives</h4>
-                        <p class="text-gray-300">₹21,000 (Performance-based, uncapped)</p>
-                    </div>
-                </div>
-                <div class="detail-card flex items-center space-x-4">
-                    <div class="icon-wrapper text-pink-300 text-3xl">
-                        <i class="fas fa-sack-dollar"></i>
-                    </div>
-                    <div>
-                        <h4 class="text-xl font-semibold mb-1">CTC</h4>
-                        <p class="text-gray-300">₹4.92 LPA</p>
-                    </div>
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <div class="card">
+                <h3 class="text-base font-semibold mb-4 text-slate-700">Demographics (Gender)</h3>
+                <div class="relative h-[250px] flex items-center justify-center">
+                    <canvas id="genderChart"></canvas>
                 </div>
             </div>
-
-            <!-- Location Section -->
-            <div class="location-section mt-12 flex flex-col md:flex-row items-center justify-between p-6 rounded-xl shadow-lg">
-                <div class="flex items-center space-x-4 mb-4 md:mb-0">
-                    <div class="location-icon bg-blue-500 text-white text-3xl p-3 rounded-full shadow-lg">
-                        <i class="fas fa-map-marker-alt"></i>
-                    </div>
-                    <div>
-                        <h4 class="text-xl font-semibold text-gray-100">Our Office Location</h4>
-                        <p class="text-gray-300">Gajanana Towers, 219, 2nd Floor, 9th Cross Rd, JP Nagar, Bengaluru. 560078</p>
-                    </div>
-                </div>
-                <a href="https://maps.app.goo.gl/Zm5wSM95uysf99419" target="_blank" class="location-link bg-blue-500 text-white py-2 px-6 rounded-full flex items-center space-x-2">
-                    View on Map <i class="fas fa-external-link-alt ml-2"></i>
-                </a>
-            </div>
-        </section>
-
-        <!-- Key Responsibilities Section -->
-        <section id="responsibilities" class="section-card mb-20 animate-on-scroll">
-            <div class="section-header-decoration w-16 h-2 rounded-full mx-auto mb-4 bg-gradient-to-r from-pink-300 to-purple-400"></div>
-            <h2 class="text-4xl font-extrabold font-montserrat mb-8">Key Responsibilities</h2>
-            <div class="grid md:grid-cols-2 gap-8 text-gray-300 text-sm"> <!-- Added text-sm class here -->
-                <div class="flex items-start space-x-3 detail-card">
-                    <i class="fas fa-check-circle text-pink-300 mt-1 text-xl"></i>
-                    <span>Client Acquisition: Call potential clients and generate interest in our services.</span>
-                </div>
-                <div class="flex items-start space-x-3 detail-card">
-                    <i class="fas fa-check-circle text-pink-300 mt-1 text-xl"></i>
-                    <span>Consultative Sales: Employ a consultative selling approach to understand client needs.</span>
-                </div>
-                <div class="flex items-start space-x-3 detail-card">
-                    <i class="fas fa-check-circle text-pink-300 mt-1 text-xl"></i>
-                    <span>Service Upselling & CRM: Upsell additional services and maintain client records in CRM.</span>
-                </div>
-                <div class="flex items-start space-x-3 detail-card">
-                    <i class="fas fa-check-circle text-pink-300 mt-1 text-xl"></i>
-                    <span>Cross-functional Collaboration: Collaborate with marketing and research teams for client success.</span>
-                </div>
-                <div class="flex items-start space-x-3 detail-card">
-                    <i class="fas fa-check-circle text-pink-300 mt-1 text-xl"></i>
-                    <span>Performance Targets: Consistently meet and exceed monthly Key Performance Indicators.</span>
-                </div>
-                <div class="flex items-start space-x-3 detail-card">
-                    <i class="fas fa-check-circle text-pink-300 mt-1 text-xl"></i>
-                    <span>Client Relationship Management: Build long-term relationships by providing exceptional post-sales support and follow-ups.</span>
+            <div class="card">
+                <h3 class="text-base font-semibold mb-4 text-slate-700">Exit Breakdown</h3>
+                <div class="relative h-[250px] flex items-center justify-center">
+                    <canvas id="exitChart"></canvas>
                 </div>
             </div>
-        </section>
-
-        <!-- Required Skills & Qualifications Section -->
-        <section id="skills" class="section-card mb-20 animate-on-scroll">
-            <div class="section-header-decoration w-16 h-2 rounded-full mx-auto mb-4 bg-gradient-to-r from-pink-300 to-purple-400"></div>
-            <h2 class="text-4xl font-extrabold font-montserrat mb-8">Required Skills</h2>
-            <div class="grid md:grid-cols-2 gap-8 text-gray-300">
-                <ul class="space-y-4">
-                    <li class="flex items-start space-x-3 detail-card">
-                        <i class="fas fa-star text-pink-300 mt-1 text-xl"></i>
-                        <span>Communication: Excellent English with 2 regional languages or Excellent English with Hindi.</span>
-                    </li>
-                    <li class="flex items-start space-x-3 detail-card">
-                        <i class="fas fa-star text-pink-300 mt-1 text-xl"></i>
-                        <span>Customer Focus: Customer-focused approach.</span>
-                    </li>
-                </ul>
-                <ul class="space-y-4">
-                    <li class="flex items-start space-x-3 detail-card">
-                        <i class="fas fa-star text-pink-300 mt-1 text-xl"></i>
-                        <span>Pressure Handling: Ability to perform under pressure.</span>
-                    </li>
-                    <li class="flex items-start space-x-3 detail-card">
-                        <i class="fas fa-star text-pink-300 mt-1 text-xl"></i>
-                        <span>Problem Solving: Problem-solving mindset.</span>
-                    </li>
-                </ul>
-            </div>
-        </section>
-
-        <!-- Career Path & Growth Section -->
-        <section id="career-path" class="section-card mb-20 animate-on-scroll">
-            <div class="section-header-decoration w-16 h-2 rounded-full mx-auto mb-4 bg-gradient-to-r from-pink-300 to-purple-400"></div>
-            <h2 class="text-4xl font-extrabold font-montserrat mb-8">Career Growth</h2>
-            <p class="text-gray-300 mb-8">At OnePaper, we believe in recognizing talent and providing accelerated career progression for high performers.</p>
-            <div class="career-path-container-new">
-                <div class="career-path-steps-new">
-                    <div class="career-step-new animate-on-scroll">
-                        <div class="icon-wrapper"><i class="fas fa-user-graduate"></i></div>
-                        Relationship Manager
-                    </div>
-                    <div class="career-step-new animate-on-scroll">
-                        <div class="icon-wrapper"><i class="fas fa-chart-line"></i></div>
-                        Senior Relationship Manager
-                    </div>
-                    <div class="career-step-new animate-on-scroll">
-                        <div class="icon-wrapper"><i class="fas fa-users"></i></div>
-                        Team Lead
-                    </div>
-                    <div class="career-step-new animate-on-scroll">
-                        <div class="icon-wrapper"><i class="fas fa-handshake"></i></div>
-                        Regional Manager
-                    </div>
-                    <div class="career-step-new animate-on-scroll">
-                        <div class="icon-wrapper"><i class="fas fa-globe"></i></div>
-                        Director / VP of Sales
-                    </div>
+            <div class="card">
+                <h3 class="text-base font-semibold mb-4 text-slate-700">Tenure Distribution</h3>
+                <div class="relative h-[250px] flex items-center justify-center">
+                    <canvas id="tenureChart"></canvas>
                 </div>
             </div>
-        </section>
+        </div>
 
-        <!-- Why Join OnePaper Section -->
-        <section id="why-join" class="section-card mb-20 animate-on-scroll">
-            <div class="section-header-decoration w-16 h-2 rounded-full mx-auto mb-4 bg-gradient-to-r from-pink-300 to-purple-400"></div>
-            <h2 class="text-4xl font-extrabold font-montserrat mb-8">Why Join OnePaper?</h2>
-            <div class="grid md:grid-cols-2 gap-8 text-gray-300">
-                <div class="flex items-start space-x-3 detail-card">
-                    <i class="fas fa-hand-holding-usd text-2xl mt-1"></i>
-                    <span>Training from NISM-certified experts.</span>
-                </div>
-                <div class="flex items-start space-x-3 detail-card">
-                    <i class="fas fa-chart-pie text-2xl mt-1"></i>
-                    <span>High-performing incentives and rewards.</span>
-                </div>
-                <div class="flex items-start space-x-3 detail-card">
-                    <i class="fas fa-lightbulb text-2xl mt-1"></i>
-                    <span>Energetic and collaborative team environment.</span>
-                </div>
-                <div class="flex items-start space-x-3 detail-card">
-                    <i class="fas fa-users-cog text-2xl mt-1"></i>
-                    <span>Clear career growth path and leadership opportunities.</span>
-                </div>
+        <div class="card overflow-hidden !p-0">
+            <div class="p-5 border-b border-slate-200 bg-slate-50">
+                <h3 class="text-base font-semibold text-slate-700">Team Performance & Attrition</h3>
+                <p class="text-xs text-slate-500">Sorted by highest attrition. Seniors & TLs are excluded from Active Reportees.</p>
             </div>
-        </section>
-
-        <!-- Eligibility and Application Process Section -->
-        <section id="eligibility-apply" class="section-card mb-20 animate-on-scroll">
-            <div class="section-header-decoration w-16 h-2 rounded-full mx-auto mb-4 bg-gradient-to-r from-pink-300 to-purple-400"></div>
-            <h2 class="text-4xl font-extrabold font-montserrat mb-8">Eligibility</h2>
-            <div class="grid md:grid-cols-2 gap-8">
-                <div class="flex items-start space-x-3 detail-card">
-                    <i class="fas fa-user-check text-xl mt-1"></i>
-                    <span>Any graduate/postgraduate.</span>
-                </div>
-                <div class="flex items-start space-x-3 detail-card">
-                    <i class="fas fa-book-reader text-xl mt-1"></i>
-                    <span>Freshers welcome.</span>
-                </div>
-                <div class="flex items-start space-x-3 detail-card">
-                    <i class="fas fa-globe-asia text-xl mt-1"></i>
-                    <span>No % criteria – learning mindset matters.</span>
-                </div>
-                <div class="flex items-start space-x-3 detail-card">
-                    <i class="fas fa-chart-line text-xl mt-1"></i>
-                    <span>Passion for stock markets and curiosity to explore financial trends is a plus.</span>
-                </div>
+            <div class="overflow-x-auto">
+                <table class="w-full text-left border-collapse whitespace-nowrap">
+                    <thead>
+                        <tr class="bg-slate-100 text-slate-600 text-sm">
+                            <th class="px-5 py-3 font-medium">Team Leader</th>
+                            <th class="px-5 py-3 font-medium text-right">Capacity (Seats)</th>
+                            <th class="px-5 py-3 font-medium text-right">Active Reportees</th>
+                            <th class="px-5 py-3 font-medium text-right">Vacant</th>
+                            <th class="px-5 py-3 font-medium text-right bg-blue-50/50">Joined (Given)</th>
+                            <th class="px-5 py-3 font-medium text-right bg-rose-50/50">Leavers (Left)</th>
+                            <th class="px-5 py-3 font-medium text-right bg-amber-50/50" title="(Left / Joined) * 100">Left vs Given %</th>
+                            <th class="px-5 py-3 font-medium text-right">Universal Attrition %</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tl-table-body" class="divide-y divide-slate-200 text-sm">
+                        <!-- Table rows generated by JS -->
+                    </tbody>
+                </table>
             </div>
-        </section>
-
-        <!-- Call to Action Section -->
-        <section id="apply" class="cta-section relative bg-gray-800 text-white py-16 px-4 sm:px-6 lg:px-8 text-center rounded-xl shadow-2xl overflow-hidden">
-            <div class="relative z-10">
-                <h2 class="text-4xl sm:text-5xl font-extrabold font-montserrat mb-6">Ready to Make an Impact?</h2>
-                <p class="text-lg sm:text-xl text-gray-300 mb-10">
-                </p>
-                <!-- Added 'flex-wrap' and 'gap-4' for better responsiveness with 3 buttons -->
-                <div class="flex flex-col lg:flex-row justify-center items-center gap-6">
-                    <a href="mailto:hr@onepaper.in" class="email-link bg-pink-400 hover:bg-pink-500 text-gray-900 font-bold py-3 px-8 rounded-full flex items-center justify-center w-full sm:w-auto">
-                        <i class="fas fa-envelope mr-3"></i> Email Your Resume
-                    </a>
-                    <a href="https://wa.me/918086981567?text=I%27m%20interested%20in%20the%20Relationship%20Manager%20position." target="_blank" class="whatsapp-button bg-green-500 hover:bg-green-600 text-white font-bold py-3 px-8 rounded-full flex items-center justify-center w-full sm:w-auto">
-                        <i class="fab fa-whatsapp mr-3"></i> Connect on WhatsApp
-                    </a>
-                    <a href="https://forms.gle/4gSuhxQdDjZXNfiRA" target="_blank" class="google-form-button bg-indigo-500 hover:bg-indigo-600 text-white font-bold py-3 px-8 rounded-full flex items-center justify-center w-full sm:w-auto">
-                        <i class="fab fa-google mr-3"></i> Register via Google Form
-                    </a>
-                </div>
-            </div>
-        </section>
-
+        </div>
     </main>
 
-    <!-- Footer -->
-    <footer class="bg-gray-900 text-gray-400 py-10 px-4 sm:px-6 lg:px-8 text-center border-t border-gray-700">
-        <div class="max-w-7xl mx-auto">
-            <p class="mb-4">&copy; 2024 OnePaper Research Analysts. All rights reserved.</p>
-            <!-- Social media icons removed -->
+    <!-- HIRING PIPELINE CONTENT -->
+    <main id="pipeline-content" class="p-6 max-w-7xl mx-auto space-y-6 hidden">
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+            <div class="card border-l-4 border-l-blue-500 flex flex-col justify-between">
+                <p class="text-sm font-medium text-slate-500">Total Selected</p>
+                <h3 id="pipe-metric-selected" class="text-3xl font-bold text-slate-800 mt-2">-</h3>
+                <p class="text-xs text-slate-400 mt-2">In selected period</p>
+            </div>
+            <div class="card border-l-4 border-l-emerald-500 flex flex-col justify-between">
+                <p class="text-sm font-medium text-slate-500">Joined</p>
+                <h3 id="pipe-metric-joined" class="text-3xl font-bold text-slate-800 mt-2">-</h3>
+                <p class="text-xs text-slate-400 mt-2">Successfully Joined</p>
+            </div>
+            <div class="card border-l-4 border-l-amber-500 flex flex-col justify-between">
+                <p class="text-sm font-medium text-slate-500">Active / Upcoming</p>
+                <h3 id="pipe-metric-upcoming" class="text-3xl font-bold text-slate-800 mt-2">-</h3>
+                <p class="text-xs text-slate-400 mt-2">Expected to Join</p>
+            </div>
+            <div class="card border-l-4 border-l-rose-500 flex flex-col justify-between">
+                <p class="text-sm font-medium text-slate-500">Backed Out</p>
+                <h3 id="pipe-metric-backedout" class="text-3xl font-bold text-slate-800 mt-2">-</h3>
+                <p class="text-xs text-slate-400 mt-2">Declined / No Show</p>
+            </div>
         </div>
-    </footer>
 
-    <!-- Three.js Library -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <div class="card">
+                <h3 class="text-base font-semibold mb-4 text-slate-700">Hiring Sources</h3>
+                <div class="relative h-[250px] flex items-center justify-center">
+                    <canvas id="sourceChart"></canvas>
+                </div>
+            </div>
+            <div class="card">
+                <h3 class="text-base font-semibold mb-4 text-slate-700">Final Outcome Distribution</h3>
+                <div class="relative h-[250px] flex items-center justify-center">
+                    <canvas id="funnelChart"></canvas>
+                </div>
+            </div>
+        </div>
+
+        <div class="card overflow-hidden !p-0">
+            <div class="p-5 border-b border-slate-200 bg-slate-50">
+                <h3 class="text-base font-semibold text-slate-700">Selection Team Breakdown</h3>
+                <p class="text-xs text-slate-500">Click a Team Leader's name to view candidate details.</p>
+            </div>
+            <div class="overflow-x-auto">
+                <table class="w-full text-left border-collapse whitespace-nowrap">
+                    <thead>
+                        <tr class="bg-slate-100 text-slate-600 text-sm">
+                            <th class="px-5 py-3 font-medium">Selection Team / TL</th>
+                            <th class="px-5 py-3 font-medium text-right">Total Selected</th>
+                            <th class="px-5 py-3 font-medium text-right">Joined</th>
+                            <th class="px-5 py-3 font-medium text-right">Active / Joining</th>
+                            <th class="px-5 py-3 font-medium text-right bg-rose-50/50">Backed Out</th>
+                            <th class="px-5 py-3 font-medium text-right">Back Out %</th>
+                        </tr>
+                    </thead>
+                    <tbody id="pipeline-table-body" class="divide-y divide-slate-200 text-sm">
+                        <!-- Pipeline table rows generated by JS -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </main>
+
+    <!-- SALES TEAM DETAILS MODAL -->
+    <div id="sales-team-modal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm hidden z-50 flex items-center justify-center p-4">
+        <div class="bg-white rounded-xl shadow-xl max-w-4xl w-full max-h-[90vh] flex flex-col relative">
+            <div class="p-5 border-b border-slate-200 flex justify-between items-center bg-slate-50 rounded-t-xl">
+                <h2 id="sales-modal-title" class="text-xl font-bold text-slate-800">Sales Team Details</h2>
+                <button onclick="document.getElementById('sales-team-modal').classList.add('hidden')" class="text-slate-400 hover:text-slate-700">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+                </button>
+            </div>
+            <div class="p-6 overflow-y-auto flex-1">
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    <div class="border border-slate-200 rounded-lg overflow-hidden flex flex-col max-h-[60vh]">
+                        <div class="bg-blue-50 px-4 py-3 border-b border-slate-200 font-semibold text-blue-800 sticky top-0">Joined (Given)</div>
+                        <ul id="sales-modal-joined" class="p-4 overflow-y-auto flex-1 space-y-1"></ul>
+                    </div>
+                    <div class="border border-slate-200 rounded-lg overflow-hidden flex flex-col max-h-[60vh]">
+                        <div class="bg-emerald-50 px-4 py-3 border-b border-slate-200 font-semibold text-emerald-800 sticky top-0">Active Reportees</div>
+                        <ul id="sales-modal-active" class="p-4 overflow-y-auto flex-1 space-y-1"></ul>
+                    </div>
+                    <div class="border border-slate-200 rounded-lg overflow-hidden flex flex-col max-h-[60vh]">
+                        <div class="bg-rose-50 px-4 py-3 border-b border-slate-200 font-semibold text-rose-800 sticky top-0">Leavers (Left)</div>
+                        <ul id="sales-modal-left" class="p-4 overflow-y-auto flex-1 space-y-1"></ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- HIRING PIPELINE TEAM MODAL -->
+    <div id="pipeline-team-modal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm hidden z-50 flex items-center justify-center p-4">
+        <div class="bg-white rounded-xl shadow-xl max-w-4xl w-full max-h-[90vh] flex flex-col relative">
+            <div class="p-5 border-b border-slate-200 flex justify-between items-center bg-slate-50 rounded-t-xl">
+                <h2 id="pipe-modal-tl-name" class="text-xl font-bold text-slate-800">Pipeline Details</h2>
+                <button onclick="document.getElementById('pipeline-team-modal').classList.add('hidden')" class="text-slate-400 hover:text-slate-700">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+                </button>
+            </div>
+            <div class="p-6 overflow-y-auto flex-1">
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    <div class="border border-slate-200 rounded-lg overflow-hidden flex flex-col max-h-[60vh]">
+                        <div class="bg-emerald-50 px-4 py-3 border-b border-slate-200 font-semibold text-emerald-800 sticky top-0">Joined</div>
+                        <ul id="pipe-modal-joined" class="p-4 overflow-y-auto flex-1 space-y-1"></ul>
+                    </div>
+                    <div class="border border-slate-200 rounded-lg overflow-hidden flex flex-col max-h-[60vh]">
+                        <div class="bg-amber-50 px-4 py-3 border-b border-slate-200 font-semibold text-amber-800 sticky top-0">Active / Upcoming</div>
+                        <ul id="pipe-modal-upcoming" class="p-4 overflow-y-auto flex-1 space-y-1"></ul>
+                    </div>
+                    <div class="border border-slate-200 rounded-lg overflow-hidden flex flex-col max-h-[60vh]">
+                        <div class="bg-rose-50 px-4 py-3 border-b border-slate-200 font-semibold text-rose-800 sticky top-0">Backed Out</div>
+                        <ul id="pipe-modal-backedout" class="p-4 overflow-y-auto flex-1 space-y-1"></ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- GLOBAL ACTIVE MODAL (Sales) -->
+    <div id="global-active-modal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm hidden z-50 flex items-center justify-center p-4">
+        <div class="bg-white rounded-xl shadow-xl max-w-2xl w-full max-h-[90vh] flex flex-col relative">
+            <div class="p-5 border-b border-slate-200 flex justify-between items-center bg-blue-50 rounded-t-xl">
+                <div>
+                    <h2 class="text-xl font-bold text-blue-900">All Active Employees</h2>
+                    <p class="text-sm text-blue-700 mt-1">Total count: <span id="global-active-count" class="font-bold"></span></p>
+                </div>
+                <button onclick="document.getElementById('global-active-modal').classList.add('hidden')" class="text-blue-400 hover:text-blue-700 bg-white rounded-full p-1">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+                </button>
+            </div>
+            <div class="p-0 overflow-y-auto flex-1 bg-slate-50">
+                <ul id="global-active-list" class="p-4 space-y-2">
+                    <!-- Global active list generated by JS -->
+                </ul>
+            </div>
+        </div>
+    </div>
+
+    <!-- UPLOAD MODAL -->
+    <div id="upload-modal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm hidden z-50 flex items-center justify-center p-4">
+        <div class="bg-white rounded-xl shadow-xl max-w-xl w-full p-6 relative max-h-[90vh] overflow-y-auto">
+            <button onclick="document.getElementById('upload-modal').classList.add('hidden')" class="absolute top-4 right-4 text-slate-400 hover:text-slate-700">
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+            </button>
+            <h2 class="text-xl font-bold text-slate-800 mb-4">Connect Your Data</h2>
+            
+            <div id="upload-error" class="hidden text-rose-600 bg-rose-50 border border-rose-200 rounded-lg p-3 text-sm font-medium mb-4 text-center"></div>
+            
+            <div class="space-y-4">
+                <div class="border-2 border-dashed border-slate-300 rounded-lg p-4 text-center hover:bg-slate-50 transition-colors">
+                    <p class="font-medium text-slate-700 mb-1">1. Employee Details CSV (Sales)</p>
+                    <input type="file" id="file-emp" accept=".csv" class="text-sm text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100 w-full cursor-pointer">
+                </div>
+
+                <div class="border-2 border-dashed border-slate-300 rounded-lg p-4 text-center hover:bg-slate-50 transition-colors">
+                    <p class="font-medium text-slate-700 mb-1">2. Seat Capacity CSV (Sales - Optional)</p>
+                    <input type="file" id="file-seat" accept=".csv" class="text-sm text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-emerald-50 file:text-emerald-700 hover:file:bg-emerald-100 w-full cursor-pointer">
+                </div>
+
+                <div class="border-2 border-dashed border-slate-300 rounded-lg p-4 text-center hover:bg-slate-50 transition-colors">
+                    <p class="font-medium text-slate-700 mb-1">3. Batch Selections CSV (Pipeline Hiring)</p>
+                    <input type="file" id="file-pipeline" accept=".csv" class="text-sm text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-purple-50 file:text-purple-700 hover:file:bg-purple-100 w-full cursor-pointer">
+                </div>
+
+                <button onclick="processUploads()" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-medium py-3 rounded-lg mt-2 transition-colors">
+                    Process Uploaded Files
+                </button>
+            </div>
+        </div>
+    </div>
+
     <script>
-        let scene, camera, renderer, financialGraph, particlesMesh;
+        let rawEmpData = [];
+        let rawSeatData = [];
+        let rawPipelineData = [];
+        let chartInstances = {};
 
-        function initThreeJS() {
-            // Scene
-            scene = new THREE.Scene();
-
-            // Camera
-            camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
-            camera.position.z = 5;
-
-            // Renderer
-            renderer = new THREE.WebGLRenderer({
-                canvas: document.getElementById('three-canvas'),
-                alpha: true
-            });
-            renderer.setSize(window.innerWidth, window.innerHeight);
-            renderer.setPixelRatio(window.devicePixelRatio);
-
-            // Basic Financial Graph (e.g., a simple line graph or bar chart representation)
-            const graphGeometry = new THREE.BufferGeometry();
-            const points = [];
-
-            // Generate some random data points for a "financial graph"
-            for (let i = 0; i < 50; i++) {
-                const x = (i / 50) * 10 - 5; // X from -5 to 5
-                const y = Math.sin(i * 0.5) * 2 + Math.random() * 0.5; // Sine wave with some randomness
-                const z = Math.cos(i * 0.3) * 1; // Slight depth variation
-                points.push(new THREE.Vector3(x, y, z));
-            }
-
-            graphGeometry.setFromPoints(points);
-            const graphMaterial = new THREE.LineBasicMaterial({
-                color: 0xfbcfe8, // Pink color
-                linewidth: 2 // Line thickness
-            });
-            financialGraph = new THREE.Line(graphGeometry, graphMaterial);
-            scene.add(financialGraph);
-
-            // Add some subtle particles
-            const particlesGeometry = new THREE.BufferGeometry();
-            const particlesCount = 500;
-            const posArray = new Float32Array(particlesCount * 3);
-
-            for (let i = 0; i < particlesCount * 3; i++) {
-                posArray[i] = (Math.random() - 0.5) * 10;
-            }
-
-            particlesGeometry.setAttribute('position', new THREE.BufferAttribute(posArray, 3));
-
-            const particlesMaterial = new THREE.PointsMaterial({
-                size: 0.02,
-                color: 0xa78bfa // Blue color
-            });
-
-            particlesMesh = new THREE.Points(particlesGeometry, particlesMaterial);
-            scene.add(particlesMesh);
-
-
-            // Handle window resize
-            window.addEventListener('resize', onWindowResize, false);
-            animateThreeJS(); // Start the animation loop
-        }
-
-        function onWindowResize() {
-            camera.aspect = window.innerWidth / window.innerHeight;
-            camera.updateProjectionMatrix();
-            renderer.setSize(window.innerWidth, window.innerHeight);
-        }
-
-        function animateThreeJS() {
-            requestAnimationFrame(animateThreeJS);
-
-            // Animate graph elements (e.g., subtle rotation)
-            if (financialGraph) {
-                financialGraph.rotation.y += 0.001;
-            }
-
-            // Animate particles
-            if (particlesMesh) {
-                particlesMesh.rotation.x += 0.0005;
-                particlesMesh.rotation.y += 0.0008;
-            }
-
-            renderer.render(scene, camera);
-        }
-
-        // Scroll Animation Logic
-        document.addEventListener('DOMContentLoaded', () => {
-            // Initialize Three.js after DOM is loaded
-            initThreeJS();
-
-            const sections = document.querySelectorAll('.animate-on-scroll');
-
-            const observerOptions = {
-                root: null, // viewport
-                rootMargin: '0px',
-                threshold: 0.1 // 10% of the section must be visible
-            };
-
-            const observer = new IntersectionObserver((entries, observer) => {
-                entries.forEach(entry => {
-                    if (entry.isIntersecting) {
-                        entry.target.classList.add('is-visible');
-                    }
+        // FULLSCREEN TOGGLE
+        function toggleFullScreen() {
+            if (!document.fullscreenElement) {
+                document.documentElement.requestFullscreen().catch(err => {
+                    console.warn(`Error attempting to enable fullscreen: ${err.message}`);
                 });
-            }, observerOptions);
-
-            sections.forEach(section => {
-                observer.observe(section);
-                const rect = section.getBoundingClientRect();
-                if (rect.top < window.innerHeight && rect.bottom > 0) {
-                    section.classList.add('is-visible');
+            } else {
+                if (document.exitFullscreen) {
+                    document.exitFullscreen();
                 }
+            }
+        }
+
+        // DARK MODE TOGGLE
+        function toggleDarkMode() {
+            document.documentElement.classList.toggle('dark');
+            const isDark = document.documentElement.classList.contains('dark');
+            const icon = document.getElementById('theme-icon');
+            if (isDark) {
+                icon.innerHTML = '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z"></path>';
+            } else {
+                icon.innerHTML = '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"></path>';
+            }
+            
+            // Adjust chart text color to match the theme
+            Chart.defaults.color = isDark ? '#cbd5e1' : '#64748b';
+            for (let id in chartInstances) {
+                chartInstances[id].update();
+            }
+        }
+
+        // UI TAB SWITCHER
+        function switchTab(tabName) {
+            const salesTab = document.getElementById('tab-sales');
+            const pipeTab = document.getElementById('tab-pipeline');
+            const salesContent = document.getElementById('sales-content');
+            const pipeContent = document.getElementById('pipeline-content');
+
+            if (tabName === 'sales') {
+                salesTab.className = "pb-3 px-2 text-sm font-bold border-b-2 border-blue-600 text-blue-700 flex items-center gap-2 transition-colors";
+                pipeTab.className = "pb-3 px-2 text-sm font-medium border-b-2 border-transparent text-slate-500 hover:text-slate-700 flex items-center gap-2 transition-colors";
+                salesContent.classList.remove('hidden');
+                pipeContent.classList.add('hidden');
+            } else {
+                pipeTab.className = "pb-3 px-2 text-sm font-bold border-b-2 border-blue-600 text-blue-700 flex items-center gap-2 transition-colors";
+                salesTab.className = "pb-3 px-2 text-sm font-medium border-b-2 border-transparent text-slate-500 hover:text-slate-700 flex items-center gap-2 transition-colors";
+                pipeContent.classList.remove('hidden');
+                salesContent.classList.add('hidden');
+            }
+        }
+
+        // Helper: Get column by possible headers safely
+        function getCol(row, exactName, altNames = []) {
+            if (!row) return '';
+            const searchTerms = [exactName, ...altNames].map(s => s.toLowerCase().replace(/[^a-z0-9]/g, ''));
+            for (let k of Object.keys(row)) {
+                const cleanK = k.toLowerCase().replace(/[^a-z0-9]/g, '');
+                if (searchTerms.includes(cleanK) && row[k] !== undefined && row[k] !== null) {
+                    return String(row[k]).trim();
+                }
+            }
+            return '';
+        }
+
+        function parseDate(dateStr) {
+            if (!dateStr) return null;
+            let str = String(dateStr).trim().replace(/[\/\\]/g, '-'); 
+            
+            const parts = str.split('-');
+            if (parts.length === 3) {
+                const day = parseInt(parts[0], 10);
+                const monthStr = parts[1].toLowerCase().substring(0, 3);
+                const year = parseInt(parts[2], 10);
+                
+                const monthMap = {jan:0, feb:1, mar:2, apr:3, may:4, jun:5, jul:6, aug:7, sep:8, oct:9, nov:10, dec:11};
+                const month = monthMap[monthStr];
+                
+                if (!isNaN(day) && month !== undefined && !isNaN(year)) {
+                    let fullYear = year < 100 ? 2000 + year : year;
+                    let safeDay = day === 0 ? 1 : day; 
+                    return new Date(fullYear, month, safeDay);
+                }
+            }
+            let d = new Date(str);
+            if (!isNaN(d.getTime())) return d;
+            return null;
+        }
+
+        function getMonthIndex(m) {
+            if(!m) return -1;
+            const str = String(m).toLowerCase().trim();
+            if(str.startsWith('jan') || str === '1' || str === '01') return 0;
+            if(str.startsWith('feb') || str === '2' || str === '02') return 1;
+            if(str.startsWith('mar') || str === '3' || str === '03') return 2;
+            if(str.startsWith('apr') || str === '4' || str === '04') return 3;
+            if(str.startsWith('may') || str === '5' || str === '05') return 4;
+            if(str.startsWith('jun') || str === '6' || str === '06') return 5;
+            if(str.startsWith('jul') || str === '7' || str === '07') return 6;
+            if(str.startsWith('aug') || str === '8' || str === '08') return 7;
+            if(str.startsWith('sep') || str === '9' || str === '09') return 8;
+            if(str.startsWith('oct') || str === '10') return 9;
+            if(str.startsWith('nov') || str === '11') return 10;
+            if(str.startsWith('dec') || str === '12') return 11;
+            return -1;
+        }
+
+        const readCSV = (file) => new Promise((resolve) => {
+            if (!file) { resolve([]); return; }
+            Papa.parse(file, {
+                header: true, skipEmptyLines: true,
+                transformHeader: h => h ? h.trim() : '',
+                complete: res => resolve(res.data)
             });
         });
+
+        async function processUploads() {
+            const empFile = document.getElementById('file-emp').files[0];
+            const seatFile = document.getElementById('file-seat').files[0];
+            const pipelineFile = document.getElementById('file-pipeline').files[0];
+            
+            document.getElementById('upload-modal').classList.add('hidden');
+            document.getElementById('connection-status').innerHTML = `<span class="w-2 h-2 rounded-full bg-emerald-500"></span> Uploaded Data`;
+            
+            if (empFile) rawEmpData = await readCSV(empFile);
+            if (seatFile) rawSeatData = await readCSV(seatFile);
+            if (pipelineFile) rawPipelineData = await readCSV(pipelineFile);
+            
+            populateFilters();
+            applyFilters();
+            processPipelineData(); // Process the new tab data
+        }
+
+        function populateFilters() {
+            const timeSelect = document.getElementById('time-filter');
+            timeSelect.innerHTML = `<option value="overall">Overall (All Time)</option>`;
+            
+            let years = new Set();
+            rawEmpData.forEach(r => {
+                let d = parseDate(getCol(r, 'OP Date of Joining'));
+                if (d) years.add(d.getFullYear());
+            });
+            let sortedYears = Array.from(years).filter(y => y >= 2026).sort((a,b) => b - a);
+            if (sortedYears.length === 0) sortedYears = [2026];
+            
+            sortedYears.forEach(y => {
+                timeSelect.innerHTML += `
+                    <optgroup label="${y} - Yearly & Quarterly">
+                        <option value="${y}-annual">${y} - Annual</option>
+                        <option value="${y}-H1">${y} - H1 (Jan-Jun)</option>
+                        <option value="${y}-H2">${y} - H2 (Jul-Dec)</option>
+                        <option value="${y}-Q1">${y} - Q1 (Jan-Mar)</option>
+                        <option value="${y}-Q2">${y} - Q2 (Apr-Jun)</option>
+                        <option value="${y}-Q3">${y} - Q3 (Jul-Sep)</option>
+                        <option value="${y}-Q4">${y} - Q4 (Oct-Dec)</option>
+                    </optgroup>
+                    <optgroup label="${y} - Monthly">
+                        <option value="${y}-12">December ${y}</option>
+                        <option value="${y}-11">November ${y}</option>
+                        <option value="${y}-10">October ${y}</option>
+                        <option value="${y}-09">September ${y}</option>
+                        <option value="${y}-08">August ${y}</option>
+                        <option value="${y}-07">July ${y}</option>
+                        <option value="${y}-06">June ${y}</option>
+                        <option value="${y}-05">May ${y}</option>
+                        <option value="${y}-04">April ${y}</option>
+                        <option value="${y}-03">March ${y}</option>
+                        <option value="${y}-02">February ${y}</option>
+                        <option value="${y}-01">January ${y}</option>
+                    </optgroup>
+                `;
+            });
+            let now = new Date();
+            let defVal = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}`;
+            if(timeSelect.querySelector(`option[value="${defVal}"]`)) {
+                timeSelect.value = defVal;
+            }
+        }
+
+        function applyFilters() {
+            const timeFilter = document.getElementById('time-filter').value;
+            
+            let startDate = new Date(1900, 0, 1), endDate = new Date(2100, 11, 31);
+            let selectedYearLabel = null;
+
+            if (timeFilter !== 'overall') {
+                const parts = timeFilter.split('-');
+                const yyyy = parseInt(parts[0]);
+                selectedYearLabel = yyyy;
+                const type = parts[1];
+                if (type === 'annual') { startDate = new Date(yyyy, 0, 1); endDate = new Date(yyyy, 11, 31); }
+                else if (type === 'H1') { startDate = new Date(yyyy, 0, 1); endDate = new Date(yyyy, 5, 30); }
+                else if (type === 'H2') { startDate = new Date(yyyy, 6, 1); endDate = new Date(yyyy, 11, 31); }
+                else if (type === 'Q1') { startDate = new Date(yyyy, 0, 1); endDate = new Date(yyyy, 2, 31); }
+                else if (type === 'Q2') { startDate = new Date(yyyy, 3, 1); endDate = new Date(yyyy, 5, 30); }
+                else if (type === 'Q3') { startDate = new Date(yyyy, 6, 1); endDate = new Date(yyyy, 8, 30); }
+                else if (type === 'Q4') { startDate = new Date(yyyy, 9, 1); endDate = new Date(yyyy, 11, 31); }
+                else { 
+                    const mm = parseInt(type) - 1; 
+                    startDate = new Date(yyyy, mm, 1); 
+                    endDate = new Date(yyyy, mm + 1, 0); 
+                }
+            }
+            
+            if(endDate) endDate.setHours(23, 59, 59, 999);
+
+            const teamLeadersList = new Set();
+            rawEmpData.forEach(r => {
+                let tl = getCol(r, 'Team Leader').trim();
+                if (tl) teamLeadersList.add(tl.toLowerCase());
+            });
+
+            // Seniors to Ignore
+            const seniorsToIgnore = ['krishna mohan pandey', 'bhimesh kumar', 'rimesh kumar'];
+
+            let totalLeavers = 0, totalJoined = 0, headCountStart = 0, headCountEnd = 0;
+            let tlStats = {}, genderCount = { 'Male': 0, 'Female': 0, 'Other': 0 };
+            let exitTypes = {}, tenureBuckets = { '0-3 Months': 0, '3-6 Months': 0, '6-12 Months': 0, '> 1 Year': 0 };
+            
+            window.globalActiveEmployees = [];
+
+            rawEmpData.forEach(row => {
+                const empId = getCol(row, 'OP New Id', ['OPNewId']);
+                const empName = getCol(row, 'Employee Name');
+                if (!empId && !empName) return; 
+                
+                let dept = getCol(row, 'Department').toLowerCase();
+                const tlName = getCol(row, 'Team Leader').trim();
+                const lowerTl = tlName.toLowerCase();
+                
+                // Exclude specific departments and specific managers! (Kunal, Patwari, Support)
+                if (dept.includes('support') || dept.includes('operations') || dept.includes('admin') || dept.includes('hr') || dept.includes('research')) return; 
+                if (lowerTl.includes('kunal') || lowerTl.includes('patwari') || lowerTl.includes('support')) return;
+
+                const cleanEmpName = empName.toLowerCase().trim();
+                if (seniorsToIgnore.some(s => cleanEmpName.includes(s))) return;
+
+                // Exclude Team Leaders from counting as active reportees
+                let isTeamLeader = false;
+                for (let tl of teamLeadersList) {
+                    if (tl.length > 3) {
+                        if (cleanEmpName === tl || cleanEmpName.startsWith(tl + " ") || tl.startsWith(cleanEmpName + " ")) {
+                            isTeamLeader = true;
+                            break;
+                        }
+                    }
+                }
+                if (isTeamLeader) return; 
+
+                if (!tlName) return; 
+
+                const doj = parseDate(getCol(row, 'OP Date of Joining'));
+                const rawExitDate = parseDate(getCol(row, 'Date of Exit'));
+                const status = getCol(row, 'Employee Status').toLowerCase().trim();
+                const exitReason = getCol(row, 'Exit Type').trim() || 'Resignation';
+                
+                if (!doj) return;
+
+                let isStatusLeft = status.includes('inactive') || status.includes('left') || status.includes('in active');
+                let actualExitDate = rawExitDate;
+                
+                if (isStatusLeft && !actualExitDate) actualExitDate = new Date(doj.getTime() + (1000 * 60 * 60 * 24)); 
+
+                let joinedBeforeStart = doj < startDate;
+                let joinedBeforeEnd = doj <= endDate;
+                let joinedDuringPeriod = doj >= startDate && doj <= endDate; 
+                
+                let leftBeforeStart = actualExitDate && actualExitDate < startDate; 
+                let leftDuringPeriod = actualExitDate && actualExitDate >= startDate && actualExitDate <= endDate;
+                
+                let activeAtEnd = joinedBeforeEnd && (!actualExitDate || actualExitDate > endDate);
+                if (isStatusLeft && (!actualExitDate || actualExitDate <= endDate)) activeAtEnd = false; 
+
+                let safeTlKey = tlName.toLowerCase();
+                if (!tlStats[safeTlKey]) {
+                    tlStats[safeTlKey] = { 
+                        display: tlName, active: 0, leavers: 0, joined: 0, startCount: 0, endCount: 0, capacity: 0,
+                        activeList: [], joinedList: [], leaversList: []
+                    };
+                }
+
+                if (joinedBeforeStart && !leftBeforeStart) {
+                    headCountStart++;
+                    tlStats[safeTlKey].startCount++;
+                }
+
+                if (joinedDuringPeriod) {
+                    totalJoined++;
+                    tlStats[safeTlKey].joined++;
+                    tlStats[safeTlKey].joinedList.push(`${empName} (${empId})`);
+                }
+                
+                if (activeAtEnd) {
+                    headCountEnd++;
+                    tlStats[safeTlKey].endCount++;
+                    tlStats[safeTlKey].active++;
+                    tlStats[safeTlKey].activeList.push(`${empName} (${empId})`);
+
+                    window.globalActiveEmployees.push({ name: empName, id: empId, tl: tlStats[safeTlKey].display });
+
+                    const gender = getCol(row, 'Gender').trim();
+                    if (gender.toLowerCase().startsWith('m')) genderCount['Male']++;
+                    else if (gender.toLowerCase().startsWith('f')) genderCount['Female']++;
+                    else genderCount['Other']++;
+
+                    const tenureDays = (new Date() - doj) / (1000 * 60 * 60 * 24);
+                    if (tenureDays <= 90) tenureBuckets['0-3 Months']++;
+                    else if (tenureDays <= 180) tenureBuckets['3-6 Months']++;
+                    else if (tenureDays <= 365) tenureBuckets['6-12 Months']++;
+                    else tenureBuckets['> 1 Year']++;
+                }
+
+                if (leftDuringPeriod) {
+                    totalLeavers++;
+                    tlStats[safeTlKey].leavers++;
+                    tlStats[safeTlKey].leaversList.push(`${empName} - ${exitReason}`);
+                    exitTypes[exitReason] = (exitTypes[exitReason] || 0) + 1;
+                }
+            });
+
+            // Map Seat Data
+            rawSeatData.forEach(row => {
+                const rawTl = getCol(row, 'TL Name', ['TL', 'Team Leader']).trim();
+                const sheetMonthStr = getCol(row, 'Month').trim();
+                const sheetYearStr = String(getCol(row, 'Year')).trim();
+                const cap = parseInt(getCol(row, 'Seat Capacity', ['Capacity', 'Seats', 'Seat Count'])) || 0;
+
+                if (!rawTl || cap === 0) return;
+
+                let matchedTl = Object.keys(tlStats).find(t => {
+                    let rclean = rawTl.toLowerCase();
+                    return t === rclean || t.includes(rclean) || rclean.includes(t);
+                });
+
+                if (!matchedTl) {
+                    matchedTl = rawTl.toLowerCase();
+                    if (matchedTl.includes('kunal') || matchedTl.includes('patwari') || matchedTl.includes('support')) return;
+
+                    tlStats[matchedTl] = { 
+                        display: rawTl, active: 0, leavers: 0, joined: 0, startCount: 0, endCount: 0, capacity: 0,
+                        activeList: [], joinedList: [], leaversList: []
+                    };
+                }
+
+                let inRange = false;
+                if (timeFilter === 'overall') {
+                    inRange = true; 
+                } else {
+                    const sheetMonthIdx = getMonthIndex(sheetMonthStr);
+                    const sheetYear = parseInt(sheetYearStr);
+                    if (startDate.getMonth() >= 0 && timeFilter.split('-').length === 2 && !isNaN(timeFilter.split('-')[1])) {
+                        if (sheetMonthIdx === startDate.getMonth() && sheetYear === startDate.getFullYear()) inRange = true;
+                    } else if (selectedYearLabel) {
+                        if (sheetYear === selectedYearLabel) inRange = true;
+                    }
+                }
+
+                if (inRange && matchedTl) {
+                    if (cap > tlStats[matchedTl].capacity) tlStats[matchedTl].capacity = cap;
+                }
+            });
+
+            let tableHTML = '';
+            let tlArray = Object.keys(tlStats).map(tlKey => {
+                let stat = tlStats[tlKey];
+                let avg = (stat.startCount + stat.endCount) / 2;
+                let att = avg > 0 ? ((stat.leavers / avg) * 100).toFixed(1) : 0;
+                
+                // Vacant math: Math.max ensures we do not go below 0 (no extra seats shown as vacant)
+                let vacNum = Math.max(0, stat.capacity - stat.active);
+
+                let leftVsGiven = stat.joined > 0 ? Math.round((stat.leavers / stat.joined) * 100) : (stat.leavers > 0 ? 'Infinity' : 0);
+                
+                return { key: tlKey, name: stat.display, ...stat, att: parseFloat(att), vacNum, leftVsGiven };
+            });
+
+            tlArray = tlArray.filter(t => t.active > 0 || t.leavers > 0 || t.capacity > 0 || t.joined > 0);
+            tlArray.sort((a, b) => b.att - a.att);
+            window.globalTLStats = tlStats;
+
+            let finalCalculatedActive = 0;
+            let finalCalculatedCapacity = 0;
+            let globalVacantNum = 0;
+            
+            tlArray.forEach(t => {
+                finalCalculatedActive += t.active;
+                finalCalculatedCapacity += t.capacity;
+                globalVacantNum += t.vacNum;
+
+                let attColor = t.att > 5 ? 'text-rose-600 bg-rose-50' : (t.att > 0 ? 'text-amber-600 bg-amber-50' : 'text-emerald-600 bg-emerald-50');
+                let lvgText = t.leftVsGiven === 'Infinity' ? `<span class="text-rose-500 font-bold">${t.leavers} Left (0 Joined)</span>` : 
+                              (t.leftVsGiven > 100 ? `<span class="text-rose-500 font-bold">${t.leftVsGiven}%</span>` : `<span class="text-slate-600">${t.leftVsGiven}%</span>`);
+
+                let vacColor = t.capacity <= 0 ? 'text-slate-400' : 'text-emerald-600';
+                let vacDisplay = t.capacity <= 0 ? '-' : t.vacNum;
+
+                tableHTML += `
+                    <tr class="hover:bg-slate-50 transition-colors">
+                        <td class="px-5 py-3 font-medium text-blue-600 cursor-pointer hover:text-blue-800 underline decoration-blue-300 underline-offset-4" onclick="showTeamDetails('${t.key}')" title="Click to view employees">
+                            ${t.name}
+                        </td>
+                        <td class="px-5 py-3 text-right text-slate-500 font-medium">${t.capacity || '-'}</td>
+                        <td class="px-5 py-3 text-right font-bold text-slate-800">${t.active}</td>
+                        <td class="px-5 py-3 text-right ${vacColor}">${vacDisplay}</td>
+                        <td class="px-5 py-3 text-right bg-blue-50/20 text-blue-600 font-bold">+${t.joined}</td>
+                        <td class="px-5 py-3 text-right font-bold text-rose-500 bg-rose-50/20">-${t.leavers}</td>
+                        <td class="px-5 py-3 text-right bg-amber-50/20">${lvgText}</td>
+                        <td class="px-5 py-3 text-right">
+                            <span class="px-2 py-1 rounded text-xs font-bold ${attColor}">${t.att}%</span>
+                        </td>
+                    </tr>
+                `;
+            });
+            
+            document.getElementById('tl-table-body').innerHTML = tableHTML || `<tr><td colspan="8" class="text-center py-6 text-slate-500">No active Sales teams or exits found for this time period</td></tr>`;
+
+            let averageHC = (headCountStart + finalCalculatedActive) / 2;
+            let attrition = averageHC > 0 ? ((totalLeavers / averageHC) * 100).toFixed(1) : 0;
+            
+            document.getElementById('metric-active').innerText = finalCalculatedActive;
+            document.getElementById('metric-vacant').innerText = finalCalculatedCapacity > 0 ? globalVacantNum : '-';
+            document.getElementById('metric-capacity').innerText = `Total Capacity: ${finalCalculatedCapacity > 0 ? finalCalculatedCapacity : 'N/A'}`;
+            document.getElementById('metric-attrition').innerText = `${attrition}%`;
+
+            renderPieChart('genderChart', Object.keys(genderCount), Object.values(genderCount), ['#3b82f6', '#ec4899', '#94a3b8']);
+            
+            const exitLabels = Object.keys(exitTypes).length ? Object.keys(exitTypes) : ['No Exits'];
+            const exitData = Object.keys(exitTypes).length ? Object.values(exitTypes) : [1];
+            renderPieChart('exitChart', exitLabels, exitData, ['#ef4444', '#f59e0b', '#8b5cf6', '#64748b']);
+            
+            renderBarChart('tenureChart', Object.keys(tenureBuckets), Object.values(tenureBuckets));
+
+            // Run pipeline processing based on current time filter
+            processPipelineData();
+        }
+
+        function processPipelineData() {
+            if (!rawPipelineData || rawPipelineData.length === 0) return;
+
+            // Recalculate date filter
+            const timeFilter = document.getElementById('time-filter').value;
+            let startDate = new Date(1900, 0, 1), endDate = new Date(2100, 11, 31);
+            if (timeFilter !== 'overall') {
+                const parts = timeFilter.split('-');
+                const yyyy = parseInt(parts[0]);
+                const type = parts[1];
+                if (type === 'annual') { startDate = new Date(yyyy, 0, 1); endDate = new Date(yyyy, 11, 31); }
+                else if (type === 'H1') { startDate = new Date(yyyy, 0, 1); endDate = new Date(yyyy, 5, 30); }
+                else if (type === 'H2') { startDate = new Date(yyyy, 6, 1); endDate = new Date(yyyy, 11, 31); }
+                else if (type === 'Q1') { startDate = new Date(yyyy, 0, 1); endDate = new Date(yyyy, 2, 31); }
+                else if (type === 'Q2') { startDate = new Date(yyyy, 3, 1); endDate = new Date(yyyy, 5, 30); }
+                else if (type === 'Q3') { startDate = new Date(yyyy, 6, 1); endDate = new Date(yyyy, 8, 30); }
+                else if (type === 'Q4') { startDate = new Date(yyyy, 9, 1); endDate = new Date(yyyy, 11, 31); }
+                else { 
+                    const mm = parseInt(type) - 1; 
+                    startDate = new Date(yyyy, mm, 1); 
+                    endDate = new Date(yyyy, mm + 1, 0); 
+                }
+            }
+            if(endDate) endDate.setHours(23, 59, 59, 999);
+
+            let totalSelected = 0;
+            let joinedCount = 0;
+            let upcomingJoiners = 0;
+            let backedOut = 0;
+            
+            let sourceCounts = {};
+            let teamStats = {};
+            let outcomeCounts = {};
+
+            rawPipelineData.forEach(row => {
+                const name = getCol(row, 'Name');
+                if (!name) return; // Skip completely empty rows
+
+                const dojStr = getCol(row, 'DOJ', ['Date of Joining']).trim();
+                const doj = parseDate(dojStr);
+
+                // Filter by Date of Joining (Current Selected Time Period)
+                let inRange = false;
+                if (timeFilter === 'overall') {
+                    inRange = true;
+                } else {
+                    if (doj && doj >= startDate && doj <= endDate) {
+                        inRange = true;
+                    }
+                }
+                
+                if (!inRange) return; // Ignore candidates not falling into the month block
+
+                totalSelected++;
+
+                const outcome = getCol(row, 'Final Outcome').toLowerCase().trim();
+                let source = getCol(row, 'Source').trim() || 'Unknown';
+                let teamRaw = getCol(row, 'Selection Team', ['TL', 'Manager']).trim() || 'Unknown';
+
+                // Team Leader Name logic (Remove Seniors if secondary TL exists, keep only 1 name)
+                let names = teamRaw.split(/\s*(?:[/,&]|\band\b|-)\s*/i).filter(n => n.trim() !== '');
+                let validNames = [];
+                let seniorNames = [];
+                names.forEach(n => {
+                    let lowerN = n.toLowerCase();
+                    if (lowerN.includes('krishna') || lowerN.includes('bhimesh')) {
+                        seniorNames.push(n);
+                    } else {
+                        validNames.push(n);
+                    }
+                });
+                
+                let team = teamRaw;
+                if (validNames.length > 0) {
+                    team = validNames[0]; // Take only the first active non-senior team leader
+                } else if (seniorNames.length > 0) {
+                    team = seniorNames[0]; // Take only one senior if they are the only ones
+                } else {
+                    team = 'Unknown';
+                }
+
+                // Logic checks based on standard responses
+                let isBackedOut = outcome.includes('back') || outcome.includes('no show') || outcome.includes('decline') || outcome.includes('drop') || outcome.includes('reject') || outcome.includes('not joining');
+                let isJoined = outcome.includes('join') && !isBackedOut && !outcome.includes('not');
+                
+                if (isBackedOut) {
+                    backedOut++;
+                    outcomeCounts['Backed Out'] = (outcomeCounts['Backed Out'] || 0) + 1;
+                } else if (isJoined) {
+                    joinedCount++;
+                    outcomeCounts['Joined'] = (outcomeCounts['Joined'] || 0) + 1;
+                } else {
+                    upcomingJoiners++; // If not joined and not backed out, they are upcoming
+                    outcomeCounts['Pending / Upcoming'] = (outcomeCounts['Pending / Upcoming'] || 0) + 1;
+                }
+
+                sourceCounts[source] = (sourceCounts[source] || 0) + 1;
+
+                if (!teamStats[team]) {
+                    teamStats[team] = {
+                        name: team, selected: 0, joined: 0, upcoming: 0, backedOut: 0,
+                        listUpcoming: [], listBackedOut: [], listJoined: []
+                    };
+                }
+
+                teamStats[team].selected++;
+                
+                // Format the detail string to clearly emphasize DOJ
+                let formattedDoj = doj ? doj.toLocaleDateString('en-GB', {day: '2-digit', month: 'short', year: 'numeric'}) : (dojStr || 'TBD');
+                let detailString = `${name} <span class="text-xs font-semibold px-2 py-0.5 rounded bg-slate-100 border border-slate-200 text-slate-600">DOJ: ${formattedDoj}</span>`;
+
+                if (isBackedOut) {
+                    teamStats[team].backedOut++;
+                    teamStats[team].listBackedOut.push(name + ` <span class="text-xs text-rose-500 font-medium ml-1">(${outcome || 'Backed Out'})</span>`);
+                } else if (isJoined) {
+                    teamStats[team].joined++;
+                    teamStats[team].listJoined.push(detailString);
+                } else {
+                    teamStats[team].upcoming++;
+                    teamStats[team].listUpcoming.push(detailString);
+                }
+            });
+
+            // Update Metrics Cards
+            document.getElementById('pipe-metric-selected').innerText = totalSelected;
+            document.getElementById('pipe-metric-joined').innerText = joinedCount;
+            document.getElementById('pipe-metric-upcoming').innerText = upcomingJoiners;
+            document.getElementById('pipe-metric-backedout').innerText = backedOut;
+
+            // Render Leaderboard Table
+            let tableHTML = '';
+            let teamArray = Object.values(teamStats).sort((a,b) => b.selected - a.selected);
+            window.globalPipelineTeams = teamStats; // Save globally for modal clicking
+
+            teamArray.forEach(t => {
+                let backOutPercentage = t.selected > 0 ? Math.round((t.backedOut / t.selected) * 100) : 0;
+                let boColor = backOutPercentage > 20 ? 'text-rose-600 font-bold' : 'text-slate-600';
+
+                tableHTML += `
+                    <tr class="hover:bg-slate-50 transition-colors">
+                        <td class="px-5 py-3 font-medium text-blue-600 cursor-pointer hover:text-blue-800 underline decoration-blue-300 underline-offset-4" onclick="showPipelineTeamDetails('${t.name}')">
+                            ${t.name}
+                        </td>
+                        <td class="px-5 py-3 text-right font-bold text-slate-800">${t.selected}</td>
+                        <td class="px-5 py-3 text-right text-emerald-600 font-bold">${t.joined}</td>
+                        <td class="px-5 py-3 text-right text-amber-600 font-bold">${t.upcoming}</td>
+                        <td class="px-5 py-3 text-right text-rose-500 font-bold bg-rose-50/20">${t.backedOut}</td>
+                        <td class="px-5 py-3 text-right ${boColor}">${backOutPercentage}%</td>
+                    </tr>
+                `;
+            });
+            
+            document.getElementById('pipeline-table-body').innerHTML = tableHTML || `<tr><td colspan="6" class="text-center py-6 text-slate-500">No hiring data found for this period.</td></tr>`;
+
+            // Render Pipeline Charts
+            let srcLabels = Object.keys(sourceCounts);
+            let srcData = Object.values(sourceCounts);
+            renderPieChart('sourceChart', srcLabels, srcData, ['#3b82f6', '#ec4899', '#8b5cf6', '#f59e0b', '#10b981', '#64748b', '#0ea5e9']);
+
+            let outLabels = Object.keys(outcomeCounts);
+            let outData = Object.values(outcomeCounts);
+            renderBarChart('funnelChart', outLabels, outData);
+        }
+
+        function showTeamDetails(tlKey) {
+            const stats = window.globalTLStats[tlKey];
+            if (!stats) return;
+
+            document.getElementById('sales-modal-title').innerText = `${stats.display} - Sales Team Details`;
+
+            const formatList = (arr) => arr.length > 0 
+                ? arr.map(item => `<li class="py-2 border-b border-slate-100 last:border-0 text-sm text-slate-700 flex items-start gap-2">
+                                     <span class="mt-1 w-1.5 h-1.5 rounded-full bg-slate-300 flex-shrink-0"></span>
+                                     ${item}
+                                   </li>`).join('') 
+                : `<li class="py-2 text-sm text-slate-400 italic">No employees found in this category.</li>`;
+
+            document.getElementById('sales-modal-active').innerHTML = formatList(stats.activeList);
+            document.getElementById('sales-modal-joined').innerHTML = formatList(stats.joinedList);
+            document.getElementById('sales-modal-left').innerHTML = formatList(stats.leaversList);
+
+            document.getElementById('sales-team-modal').classList.remove('hidden');
+        }
+
+        function showPipelineTeamDetails(tlName) {
+            const stats = window.globalPipelineTeams[tlName];
+            if (!stats) return;
+
+            document.getElementById('pipe-modal-tl-name').innerText = `${stats.name} - Hiring Pipeline Details`;
+
+            const formatList = (arr) => arr.length > 0 
+                ? arr.map(item => `<li class="py-2 border-b border-slate-100 last:border-0 text-sm font-medium text-slate-700 flex items-center gap-2">
+                                     <span class="w-1.5 h-1.5 rounded-full bg-slate-400 flex-shrink-0"></span>
+                                     <span class="flex-1 flex items-center justify-between">${item}</span>
+                                   </li>`).join('') 
+                : `<li class="py-2 text-sm text-slate-400 italic">No candidates found in this category.</li>`;
+
+            document.getElementById('pipe-modal-joined').innerHTML = formatList(stats.listJoined);
+            document.getElementById('pipe-modal-upcoming').innerHTML = formatList(stats.listUpcoming);
+            document.getElementById('pipe-modal-backedout').innerHTML = formatList(stats.listBackedOut);
+
+            document.getElementById('pipeline-team-modal').classList.remove('hidden');
+        }
+
+        function showGlobalActive() {
+            const list = window.globalActiveEmployees || [];
+            list.sort((a, b) => {
+                const tlCompare = a.tl.localeCompare(b.tl);
+                if (tlCompare !== 0) return tlCompare;
+                return a.name.localeCompare(b.name);
+            });
+            
+            const html = list.map(emp => `
+                <li class="py-3 bg-white rounded-lg shadow-sm border border-slate-200 px-4 flex justify-between items-center hover:border-blue-300 transition-colors">
+                    <div>
+                        <p class="text-sm font-bold text-slate-800">${emp.name} <span class="text-xs text-slate-400 font-normal ml-1">ID: ${emp.id || 'N/A'}</span></p>
+                        <p class="text-xs text-slate-500 mt-0.5">Reporting to: <span class="font-medium text-slate-700">${emp.tl}</span></p>
+                    </div>
+                </li>
+            `).join('');
+            
+            document.getElementById('global-active-list').innerHTML = html || '<li class="py-4 text-center text-slate-500">No active employees found.</li>';
+            document.getElementById('global-active-count').innerText = list.length;
+            document.getElementById('global-active-modal').classList.remove('hidden');
+        }
+
+        function renderPieChart(canvasId, labels, data, colors) {
+            if (chartInstances[canvasId]) chartInstances[canvasId].destroy();
+            const ctx = document.getElementById(canvasId).getContext('2d');
+            chartInstances[canvasId] = new Chart(ctx, { type: 'doughnut', data: { labels: labels, datasets: [{ data: data, backgroundColor: colors, borderWidth: 0 }] }, options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'bottom', labels: { boxWidth: 12 } } }, cutout: '60%' } });
+        }
+
+        function renderBarChart(canvasId, labels, data) {
+            if (chartInstances[canvasId]) chartInstances[canvasId].destroy();
+            const ctx = document.getElementById(canvasId).getContext('2d');
+            chartInstances[canvasId] = new Chart(ctx, { type: 'bar', data: { labels: labels, datasets: [{ data: data, backgroundColor: '#3b82f6', borderRadius: 4 }] }, options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true, grid: { borderDash: [2, 2] } }, x: { grid: { display: false } } } } });
+        }
+
+        const sheetId = '114vKYM3bz7xqj-40_CtsUl5gKkZLsiOavaFjD87iFrs';
+        const empUrl = `https://docs.google.com/spreadsheets/d/${sheetId}/gviz/tq?tqx=out:csv&sheet=Employee%20details`;
+        const seatUrl = `https://docs.google.com/spreadsheets/d/${sheetId}/gviz/tq?tqx=out:csv&sheet=Seat`;
+        const pipelineUrl = `https://docs.google.com/spreadsheets/d/${sheetId}/gviz/tq?tqx=out:csv&sheet=Batch%20Selections`;
+
+        const fetchCsv = (url) => new Promise((resolve, reject) => {
+            // Adding a timestamp cache-buster to ensure we get the absolute latest data on every refresh
+            const cacheBustUrl = url + `&_t=${new Date().getTime()}`;
+            Papa.parse(cacheBustUrl, { download: true, header: true, skipEmptyLines: true, transformHeader: h => h ? h.trim() : '', complete: res => resolve(res.data), error: err => reject(err) });
+        });
+
+        async function fetchAndRefreshData() {
+            const statusEl = document.getElementById('connection-status');
+            
+            try {
+                // Show brief syncing state
+                if (rawEmpData.length > 0) {
+                    statusEl.innerHTML = `<span class="flex items-center gap-1 text-blue-600 font-medium"><span class="w-2 h-2 rounded-full bg-blue-500 animate-pulse"></span> Syncing...</span>`;
+                }
+
+                rawEmpData = await fetchCsv(empUrl);
+                try { rawSeatData = await fetchCsv(seatUrl); } catch (e) { rawSeatData = []; }
+                try { rawPipelineData = await fetchCsv(pipelineUrl); } catch (e) { rawPipelineData = []; }
+
+                if (rawEmpData && rawEmpData.length > 0) {
+                    let empCount = rawEmpData.filter(r => getCol(r, 'OP New Id', ['OPNewId'])).length;
+                    
+                    // Save the current time filter so the UI doesn't reset while you are looking at it
+                    const timeSelect = document.getElementById('time-filter');
+                    const currentFilter = timeSelect.value;
+                    
+                    populateFilters();
+                    
+                    if (currentFilter && timeSelect.querySelector(`option[value="${currentFilter}"]`)) {
+                        timeSelect.value = currentFilter;
+                    }
+                    
+                    applyFilters(); // applyFilters handles updating both Sales and Pipeline charts automatically
+                    
+                    statusEl.innerHTML = `<span class="flex items-center gap-1 text-emerald-600 font-medium"><span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span> Connected to Live Sheet</span>`;
+                    document.getElementById('row-count').innerText = `${empCount} Records Scanned`;
+                } else { throw new Error("Blocked"); }
+            } catch (error) {
+                statusEl.innerHTML = `<span class="text-rose-500 font-medium">Google blocked live link - Please upload CSVs manually via Connect Data</span>`;
+                // Keep existing data on screen if network temporarily fails
+                if (rawEmpData.length === 0) populateFilters(); 
+            }
+        }
+
+        window.onload = () => {
+            fetchAndRefreshData();
+            // Automatically refresh the data every 30 seconds
+            setInterval(fetchAndRefreshData, 30000); 
+        };
     </script>
 </body>
 </html>
