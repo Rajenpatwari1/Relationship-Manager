@@ -4,166 +4,281 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>HR Overview</title>
+    <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
-        tailwind.config = { darkMode: 'class' }
+        tailwind.config = { 
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    fontFamily: { sans: ['Inter', 'sans-serif'] }
+                }
+            }
+        }
     </script>
+    <!-- Chart.js & PapaParse -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
+    <!-- Phosphor Icons for Infographic Visuals -->
+    <script src="https://unpkg.com/@phosphor-icons/web"></script>
+    
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
-        body { font-family: 'Inter', sans-serif; background-color: #f8fafc; transition: background-color 0.3s; }
-        .card { background: white; border-radius: 0.75rem; box-shadow: 0 1px 3px rgba(0,0,0,0.1); border: 1px solid #e2e8f0; padding: 1.5rem; transition: all 0.3s; }
-        canvas { max-height: 250px; }
-        /* Custom scrollbar for modals */
-        ::-webkit-scrollbar { width: 6px; }
+        
+        body { 
+            font-family: 'Inter', sans-serif; 
+            /* Subtle radial gradient background */
+            background-color: #f8fafc;
+            background-image: radial-gradient(at 0% 0%, hsla(210,100%,97%,1) 0, transparent 50%), radial-gradient(at 100% 0%, hsla(210,100%,95%,1) 0, transparent 50%);
+            background-attachment: fixed;
+            transition: background-color 0.3s, background-image 0.3s; 
+        }
+        
+        .card { 
+            background: rgba(255, 255, 255, 0.9); 
+            backdrop-filter: blur(10px);
+            border-radius: 1rem; 
+            box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05), 0 2px 4px -1px rgba(0,0,0,0.03); 
+            border: 1px solid rgba(226, 232, 240, 0.8); 
+            padding: 1.5rem; 
+            transition: all 0.3s ease-in-out; 
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 15px -3px rgba(0,0,0,0.08), 0 4px 6px -2px rgba(0,0,0,0.04);
+        }
+
+        .metric-watermark {
+            position: absolute;
+            right: -1rem;
+            bottom: -1.5rem;
+            font-size: 8rem;
+            opacity: 0.04;
+            transform: rotate(-10deg);
+            pointer-events: none;
+            transition: opacity 0.3s, transform 0.3s;
+        }
+
+        .card:hover .metric-watermark {
+            opacity: 0.08;
+            transform: rotate(0deg) scale(1.1);
+        }
+
+        canvas { max-height: 280px; }
+        
+        /* Custom scrollbar */
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
         ::-webkit-scrollbar-track { background: transparent; }
         ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
         ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
         
         /* Dark Mode Overrides */
-        html.dark body { background-color: #0f172a; color: #f1f5f9; }
-        html.dark .card { background-color: #1e293b; border-color: #334155; }
-        html.dark nav { background-color: #1e293b !important; border-color: #334155 !important; }
+        html.dark body { 
+            background-color: #0f172a; 
+            background-image: radial-gradient(at 0% 0%, hsla(220,100%,12%,1) 0, transparent 50%), radial-gradient(at 100% 0%, hsla(220,100%,9%,1) 0, transparent 50%);
+            color: #f1f5f9; 
+        }
+        html.dark .card { 
+            background-color: rgba(30, 41, 59, 0.8); 
+            border-color: rgba(51, 65, 85, 0.8); 
+        }
+        html.dark nav { background-color: rgba(30, 41, 59, 0.8) !important; border-color: rgba(51, 65, 85, 0.8) !important; }
         html.dark h1, html.dark h2, html.dark h3 { color: #f8fafc !important; }
         html.dark .text-slate-900, html.dark .text-slate-800, html.dark .text-slate-700, html.dark .text-slate-600, html.dark .text-slate-500 { color: #cbd5e1 !important; }
         html.dark .bg-slate-50, html.dark .bg-slate-100 { background-color: #0f172a !important; border-color: #334155 !important; }
         html.dark .border-slate-200 { border-color: #334155 !important; }
         html.dark th, html.dark td, html.dark tr, html.dark .border-b { border-color: #334155 !important; }
-        html.dark select, html.dark input { background-color: #1e293b !important; color: #f8fafc !important; border-color: #334155 !important; }
+        html.dark select, html.dark input { background-color: #0f172a !important; color: #f8fafc !important; border-color: #334155 !important; }
         html.dark .bg-white { background-color: #1e293b !important; }
         html.dark .hover\:bg-slate-50:hover { background-color: #334155 !important; }
-        html.dark .bg-blue-50\/50, html.dark .bg-blue-50\/20 { background-color: rgba(59, 130, 246, 0.15) !important; }
-        html.dark .bg-rose-50\/50, html.dark .bg-rose-50\/20 { background-color: rgba(244, 63, 94, 0.15) !important; }
-        html.dark .bg-amber-50\/50, html.dark .bg-amber-50\/20 { background-color: rgba(245, 158, 11, 0.15) !important; }
-        html.dark .bg-emerald-50\/50, html.dark .bg-emerald-50\/20 { background-color: rgba(16, 185, 129, 0.15) !important; }
-        html.dark .bg-blue-50 { background-color: rgba(59, 130, 246, 0.1) !important; }
-        html.dark .bg-emerald-50 { background-color: rgba(16, 185, 129, 0.1) !important; }
-        html.dark .bg-rose-50 { background-color: rgba(244, 63, 94, 0.1) !important; }
-        html.dark .bg-amber-50 { background-color: rgba(245, 158, 11, 0.1) !important; }
-        html.dark .text-blue-600 { color: #60a5fa !important; }
-        html.dark .text-blue-800 { color: #93c5fd !important; }
-        html.dark .text-rose-500, html.dark .text-rose-600 { color: #fb7185 !important; }
-        html.dark .text-amber-600 { color: #fbbf24 !important; }
-        html.dark .text-emerald-600 { color: #34d399 !important; }
-        html.dark .border-l-blue-500 { border-left-color: #3b82f6 !important; }
-        html.dark .border-l-rose-500 { border-left-color: #f43f5e !important; }
-        html.dark .border-l-amber-500 { border-left-color: #f59e0b !important; }
-        html.dark .border-l-emerald-500 { border-left-color: #10b981 !important; }
+        html.dark .bg-blue-50\/50, html.dark .bg-blue-50\/20 { background-color: rgba(59, 130, 246, 0.1) !important; }
+        html.dark .bg-rose-50\/50, html.dark .bg-rose-50\/20 { background-color: rgba(244, 63, 94, 0.1) !important; }
+        html.dark .bg-amber-50\/50, html.dark .bg-amber-50\/20 { background-color: rgba(245, 158, 11, 0.1) !important; }
+        html.dark .bg-emerald-50\/50, html.dark .bg-emerald-50\/20 { background-color: rgba(16, 185, 129, 0.1) !important; }
+        
+        /* Glass Navbar */
+        nav.sticky {
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            background-color: rgba(255, 255, 255, 0.85);
+        }
     </style>
 </head>
 <body class="text-slate-800 transition-colors duration-300">
 
-    <nav class="bg-white border-b border-slate-200 px-6 pt-4 sticky top-0 z-40 transition-colors duration-300">
+    <nav class="border-b border-slate-200 px-6 pt-4 sticky top-0 z-40 transition-colors duration-300 shadow-sm">
         <div class="flex flex-col md:flex-row justify-between items-center gap-4 mb-4">
-            <div>
-                <h1 class="text-2xl font-bold text-slate-900">HR Overview</h1>
-                <div class="flex items-center gap-2 text-sm mt-1">
-                    <span id="connection-status" class="flex items-center gap-1 text-emerald-600 font-medium">
-                        <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
-                        Live Data
-                    </span>
-                    <span id="row-count" class="text-slate-500"></span>
+            <div class="flex items-center gap-4">
+                <div class="bg-blue-600 p-2.5 rounded-xl shadow-lg shadow-blue-500/30 text-white">
+                    <i class="ph ph-chart-polar text-2xl"></i>
+                </div>
+                <div>
+                    <h1 class="text-2xl font-black tracking-tight text-slate-900">HR Overview</h1>
+                    <div class="flex items-center gap-2 text-xs font-semibold uppercase tracking-wider mt-1">
+                        <span id="connection-status" class="flex items-center gap-1.5 text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200 dark:bg-emerald-900/30 dark:border-emerald-800">
+                            <span class="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
+                            Live Data
+                        </span>
+                        <span id="row-count" class="text-slate-500 bg-slate-100 px-2 py-0.5 rounded-full dark:bg-slate-800">0 Records</span>
+                    </div>
                 </div>
             </div>
             
             <div class="flex flex-wrap items-center gap-3">
-                <button onclick="toggleDarkMode()" class="p-2 rounded-lg bg-slate-100 text-slate-600 hover:bg-slate-200 dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-slate-700 transition-colors" title="Toggle Dark Mode">
-                    <svg id="theme-icon" class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"></path></svg>
+                <button onclick="toggleDarkMode()" class="p-2.5 rounded-xl bg-white shadow-sm border border-slate-200 text-slate-600 hover:bg-slate-50 hover:text-blue-600 dark:bg-slate-800 dark:border-slate-700 dark:text-slate-300 dark:hover:text-blue-400 transition-all" title="Toggle Dark Mode">
+                    <i id="theme-icon" class="ph ph-moon text-lg"></i>
                 </button>
 
-                <button onclick="toggleFullScreen()" class="p-2 rounded-lg bg-slate-100 text-slate-600 hover:bg-slate-200 dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-slate-700 transition-colors" title="Toggle Full Screen">
-                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4"></path></svg>
+                <button onclick="toggleFullScreen()" class="p-2.5 rounded-xl bg-white shadow-sm border border-slate-200 text-slate-600 hover:bg-slate-50 hover:text-blue-600 dark:bg-slate-800 dark:border-slate-700 dark:text-slate-300 dark:hover:text-blue-400 transition-all" title="Toggle Full Screen">
+                    <i class="ph ph-corners-out text-lg"></i>
                 </button>
                 
-                <select id="time-filter" class="bg-slate-50 border border-slate-200 text-slate-700 rounded-lg px-4 py-2 text-sm font-medium focus:ring-2 focus:ring-blue-500 outline-none" onchange="applyFilters()">
-                    <option value="overall">Overall (All Time)</option>
-                </select>
+                <div class="relative">
+                    <i class="ph ph-calendar-blank absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"></i>
+                    <select id="time-filter" class="appearance-none bg-white shadow-sm border border-slate-200 text-slate-700 rounded-xl pl-9 pr-8 py-2.5 text-sm font-semibold focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all cursor-pointer hover:bg-slate-50" onchange="applyFilters()">
+                        <option value="overall">Overall (All Time)</option>
+                    </select>
+                    <i class="ph ph-caret-down absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none"></i>
+                </div>
                 
-                <button onclick="document.getElementById('upload-modal').classList.remove('hidden')" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors shadow-sm flex items-center gap-2">
-                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"></path></svg>
+                <button onclick="document.getElementById('upload-modal').classList.remove('hidden')" class="bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white px-5 py-2.5 rounded-xl text-sm font-semibold transition-all shadow-lg shadow-blue-500/25 flex items-center gap-2 hover:scale-105 active:scale-95">
+                    <i class="ph ph-database text-lg"></i>
                     Connect Data
                 </button>
             </div>
         </div>
 
         <!-- Tab Navigation -->
-        <div class="flex gap-6 border-b border-slate-200">
-            <button onclick="switchTab('sales')" id="tab-sales" class="pb-3 px-2 text-sm font-bold border-b-2 border-blue-600 text-blue-700 flex items-center gap-2 transition-colors">
-                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 13.255A23.931 23.931 0 0112 15c-3.183 0-6.22-.62-9-1.745M16 6V4a2 2 0 00-2-2h-4a2 2 0 00-2 2v2m4 6h.01M5 20h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"></path></svg>
+        <div class="flex gap-8 border-b border-slate-200">
+            <button onclick="switchTab('sales')" id="tab-sales" class="pb-3 px-2 text-sm font-bold border-b-[3px] border-blue-600 text-blue-700 flex items-center gap-2 transition-colors">
+                <i class="ph-fill ph-users-three text-lg"></i>
                 Sales Dept (Active)
             </button>
-            <button onclick="switchTab('pipeline')" id="tab-pipeline" class="pb-3 px-2 text-sm font-medium border-b-2 border-transparent text-slate-500 hover:text-slate-700 flex items-center gap-2 transition-colors">
-                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"></path></svg>
+            <button onclick="switchTab('pipeline')" id="tab-pipeline" class="pb-3 px-2 text-sm font-medium border-b-[3px] border-transparent text-slate-500 hover:text-slate-700 flex items-center gap-2 transition-colors">
+                <i class="ph ph-funnel text-lg"></i>
                 Hiring Pipeline
             </button>
         </div>
     </nav>
 
     <!-- SALES DEPT CONTENT -->
-    <main id="sales-content" class="p-6 max-w-7xl mx-auto space-y-6 block">
+    <main id="sales-content" class="p-6 max-w-[1400px] mx-auto space-y-8 block">
+        <!-- Metric Cards -->
         <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            <div class="card border-l-4 border-l-blue-500 flex flex-col justify-between cursor-pointer hover:bg-blue-50 transition-colors group" onclick="showGlobalActive()" title="Click to view all active employees">
+            <div class="card border-t-[5px] border-t-blue-500 cursor-pointer group" onclick="showGlobalActive()" title="Click to view all active employees">
+                <i class="ph-fill ph-users-three metric-watermark text-blue-500"></i>
                 <div class="flex justify-between items-start">
-                    <p class="text-sm font-medium text-slate-500 group-hover:text-blue-600 transition-colors">Active Employees</p>
-                    <svg class="w-4 h-4 text-slate-300 group-hover:text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path></svg>
+                    <div>
+                        <p class="text-sm font-bold uppercase tracking-wider text-slate-500 group-hover:text-blue-600 transition-colors">Active Employees</p>
+                        <h3 id="metric-active" class="text-4xl font-black text-slate-800 mt-2 tracking-tight">-</h3>
+                    </div>
+                    <div class="p-2 bg-blue-50 text-blue-600 rounded-lg group-hover:scale-110 transition-transform dark:bg-blue-900/30">
+                        <i class="ph ph-cursor-click text-xl"></i>
+                    </div>
                 </div>
-                <h3 id="metric-active" class="text-3xl font-bold text-slate-800 mt-2">-</h3>
-                <p class="text-xs text-slate-400 mt-2">Excluding Team Leaders</p>
+                <div class="mt-4 flex items-center gap-2 text-xs font-medium text-slate-400 bg-slate-50 inline-block px-2.5 py-1 rounded-md dark:bg-slate-800/50">
+                    <i class="ph ph-info"></i> Excluding Team Leaders
+                </div>
             </div>
-            <div class="card border-l-4 border-l-rose-500 flex flex-col justify-between">
-                <p class="text-sm font-medium text-slate-500">Vacant Seats</p>
-                <h3 id="metric-vacant" class="text-3xl font-bold text-slate-800 mt-2">-</h3>
-                <p id="metric-capacity" class="text-xs text-slate-400 mt-2">Total Capacity: -</p>
+            
+            <div class="card border-t-[5px] border-t-emerald-500">
+                <i class="ph-fill ph-armchair metric-watermark text-emerald-500"></i>
+                <div class="flex justify-between items-start">
+                    <div>
+                        <p class="text-sm font-bold uppercase tracking-wider text-slate-500">Vacant Seats</p>
+                        <h3 id="metric-vacant" class="text-4xl font-black text-slate-800 mt-2 tracking-tight">-</h3>
+                    </div>
+                    <div class="p-2 bg-emerald-50 text-emerald-600 rounded-lg dark:bg-emerald-900/30">
+                        <i class="ph ph-chair text-xl"></i>
+                    </div>
+                </div>
+                <div class="mt-4 flex items-center gap-2 text-xs font-medium text-slate-400 bg-slate-50 inline-block px-2.5 py-1 rounded-md dark:bg-slate-800/50">
+                    <i class="ph ph-buildings"></i> <span id="metric-capacity">Total Capacity: -</span>
+                </div>
             </div>
-            <div class="card border-l-4 border-l-amber-500 flex flex-col justify-between">
-                <p class="text-sm font-medium text-slate-500">Attrition Rate</p>
-                <h3 id="metric-attrition" class="text-3xl font-bold text-slate-800 mt-2">-</h3>
-                <p class="text-xs text-slate-400 mt-2">Universal Formula</p>
+            
+            <div class="card border-t-[5px] border-t-amber-500">
+                <i class="ph-fill ph-trend-down metric-watermark text-amber-500"></i>
+                <div class="flex justify-between items-start">
+                    <div>
+                        <p class="text-sm font-bold uppercase tracking-wider text-slate-500">Attrition Rate</p>
+                        <h3 id="metric-attrition" class="text-4xl font-black text-slate-800 mt-2 tracking-tight">-</h3>
+                    </div>
+                    <div class="p-2 bg-amber-50 text-amber-600 rounded-lg dark:bg-amber-900/30">
+                        <i class="ph ph-percent text-xl"></i>
+                    </div>
+                </div>
+                <div class="mt-4 flex items-center gap-2 text-xs font-medium text-slate-400 bg-slate-50 inline-block px-2.5 py-1 rounded-md dark:bg-slate-800/50">
+                    <i class="ph ph-calculator"></i> Universal Formula
+                </div>
             </div>
         </div>
 
+        <!-- Charts Grid -->
         <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
             <div class="card">
-                <h3 class="text-base font-semibold mb-4 text-slate-700">Demographics (Gender)</h3>
-                <div class="relative h-[250px] flex items-center justify-center">
+                <div class="flex items-center gap-2 mb-4">
+                    <div class="w-8 h-8 rounded-lg bg-indigo-50 text-indigo-600 flex items-center justify-center dark:bg-indigo-900/30">
+                        <i class="ph ph-gender-intersex text-lg"></i>
+                    </div>
+                    <h3 class="text-base font-bold text-slate-700">Demographics</h3>
+                </div>
+                <div class="relative h-[260px] flex items-center justify-center">
                     <canvas id="genderChart"></canvas>
                 </div>
             </div>
             <div class="card">
-                <h3 class="text-base font-semibold mb-4 text-slate-700">Exit Breakdown</h3>
-                <div class="relative h-[250px] flex items-center justify-center">
+                <div class="flex items-center gap-2 mb-4">
+                    <div class="w-8 h-8 rounded-lg bg-rose-50 text-rose-600 flex items-center justify-center dark:bg-rose-900/30">
+                        <i class="ph ph-sign-out text-lg"></i>
+                    </div>
+                    <h3 class="text-base font-bold text-slate-700">Exit Breakdown</h3>
+                </div>
+                <div class="relative h-[260px] flex items-center justify-center">
                     <canvas id="exitChart"></canvas>
                 </div>
             </div>
             <div class="card">
-                <h3 class="text-base font-semibold mb-4 text-slate-700">Tenure Distribution</h3>
-                <div class="relative h-[250px] flex items-center justify-center">
+                <div class="flex items-center gap-2 mb-4">
+                    <div class="w-8 h-8 rounded-lg bg-teal-50 text-teal-600 flex items-center justify-center dark:bg-teal-900/30">
+                        <i class="ph ph-hourglass-medium text-lg"></i>
+                    </div>
+                    <h3 class="text-base font-bold text-slate-700">Tenure Distribution</h3>
+                </div>
+                <div class="relative h-[260px] flex items-center justify-center">
                     <canvas id="tenureChart"></canvas>
                 </div>
             </div>
         </div>
 
+        <!-- Leaderboard Table -->
         <div class="card overflow-hidden !p-0">
-            <div class="p-5 border-b border-slate-200 bg-slate-50">
-                <h3 class="text-base font-semibold text-slate-700">Team Performance & Attrition</h3>
-                <p class="text-xs text-slate-500">Sorted by highest attrition. Seniors & TLs are excluded from Active Reportees.</p>
+            <div class="p-5 border-b border-slate-200 bg-slate-50/50 dark:bg-slate-800/50 flex justify-between items-center">
+                <div>
+                    <h3 class="text-lg font-black text-slate-800 flex items-center gap-2">
+                        <i class="ph-fill ph-trophy text-amber-500"></i> Team Performance Board
+                    </h3>
+                    <p class="text-xs font-medium text-slate-500 mt-1">Sorted by highest attrition. Seniors & TLs are excluded from Active Reportees.</p>
+                </div>
             </div>
             <div class="overflow-x-auto">
                 <table class="w-full text-left border-collapse whitespace-nowrap">
                     <thead>
-                        <tr class="bg-slate-100 text-slate-600 text-sm">
-                            <th class="px-5 py-3 font-medium">Team Leader</th>
-                            <th class="px-5 py-3 font-medium text-right">Capacity (Seats)</th>
-                            <th class="px-5 py-3 font-medium text-right">Active Reportees</th>
-                            <th class="px-5 py-3 font-medium text-right">Vacant</th>
-                            <th class="px-5 py-3 font-medium text-right bg-blue-50/50">Joined (Given)</th>
-                            <th class="px-5 py-3 font-medium text-right bg-rose-50/50">Leavers (Left)</th>
-                            <th class="px-5 py-3 font-medium text-right bg-amber-50/50" title="(Left / Joined) * 100">Left vs Given %</th>
-                            <th class="px-5 py-3 font-medium text-right">Universal Attrition %</th>
+                        <tr class="bg-white text-slate-500 text-xs uppercase tracking-wider font-bold border-b border-slate-200 dark:bg-slate-800">
+                            <th class="px-6 py-4">Team Leader</th>
+                            <th class="px-4 py-4 text-center">Capacity</th>
+                            <th class="px-4 py-4 text-center">Active</th>
+                            <th class="px-4 py-4 text-center">Vacant</th>
+                            <th class="px-4 py-4 text-center bg-blue-50/30 dark:bg-blue-900/10">Joined</th>
+                            <th class="px-4 py-4 text-center bg-rose-50/30 dark:bg-rose-900/10">Left</th>
+                            <th class="px-4 py-4 text-center bg-amber-50/30 dark:bg-amber-900/10" title="(Left / Joined) * 100">Left vs Given</th>
+                            <th class="px-6 py-4 text-right">Attrition %</th>
                         </tr>
                     </thead>
-                    <tbody id="tl-table-body" class="divide-y divide-slate-200 text-sm">
+                    <tbody id="tl-table-body" class="divide-y divide-slate-100 text-sm font-medium dark:divide-slate-700">
                         <!-- Table rows generated by JS -->
                     </tbody>
                 </table>
@@ -172,63 +287,93 @@
     </main>
 
     <!-- HIRING PIPELINE CONTENT -->
-    <main id="pipeline-content" class="p-6 max-w-7xl mx-auto space-y-6 hidden">
+    <main id="pipeline-content" class="p-6 max-w-[1400px] mx-auto space-y-8 hidden">
+        <!-- Pipeline Cards -->
         <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-            <div class="card border-l-4 border-l-blue-500 flex flex-col justify-between">
-                <p class="text-sm font-medium text-slate-500">Total Selected</p>
-                <h3 id="pipe-metric-selected" class="text-3xl font-bold text-slate-800 mt-2">-</h3>
-                <p class="text-xs text-slate-400 mt-2">In selected period</p>
+            <div class="card border-t-[5px] border-t-indigo-500">
+                <i class="ph-fill ph-users metric-watermark text-indigo-500"></i>
+                <p class="text-sm font-bold uppercase tracking-wider text-slate-500">Total Selected</p>
+                <h3 id="pipe-metric-selected" class="text-4xl font-black text-slate-800 mt-2 tracking-tight">-</h3>
+                <div class="mt-4 flex items-center gap-2 text-xs font-medium text-slate-400 bg-slate-50 inline-block px-2.5 py-1 rounded-md dark:bg-slate-800/50">
+                    <i class="ph ph-calendar"></i> In selected period
+                </div>
             </div>
-            <div class="card border-l-4 border-l-emerald-500 flex flex-col justify-between">
-                <p class="text-sm font-medium text-slate-500">Joined</p>
-                <h3 id="pipe-metric-joined" class="text-3xl font-bold text-slate-800 mt-2">-</h3>
-                <p class="text-xs text-slate-400 mt-2">Successfully Joined</p>
+            
+            <div class="card border-t-[5px] border-t-emerald-500">
+                <i class="ph-fill ph-handshake metric-watermark text-emerald-500"></i>
+                <p class="text-sm font-bold uppercase tracking-wider text-slate-500">Joined</p>
+                <h3 id="pipe-metric-joined" class="text-4xl font-black text-slate-800 mt-2 tracking-tight">-</h3>
+                <div class="mt-4 flex items-center gap-2 text-xs font-medium text-slate-400 bg-slate-50 inline-block px-2.5 py-1 rounded-md dark:bg-slate-800/50">
+                    <i class="ph ph-check-circle"></i> Successfully Joined
+                </div>
             </div>
-            <div class="card border-l-4 border-l-amber-500 flex flex-col justify-between">
-                <p class="text-sm font-medium text-slate-500">Active / Upcoming</p>
-                <h3 id="pipe-metric-upcoming" class="text-3xl font-bold text-slate-800 mt-2">-</h3>
-                <p class="text-xs text-slate-400 mt-2">Expected to Join</p>
+            
+            <div class="card border-t-[5px] border-t-amber-500">
+                <i class="ph-fill ph-hourglass-high metric-watermark text-amber-500"></i>
+                <p class="text-sm font-bold uppercase tracking-wider text-slate-500">Active / Upcoming</p>
+                <h3 id="pipe-metric-upcoming" class="text-4xl font-black text-slate-800 mt-2 tracking-tight">-</h3>
+                <div class="mt-4 flex items-center gap-2 text-xs font-medium text-slate-400 bg-slate-50 inline-block px-2.5 py-1 rounded-md dark:bg-slate-800/50">
+                    <i class="ph ph-clock"></i> Expected to Join
+                </div>
             </div>
-            <div class="card border-l-4 border-l-rose-500 flex flex-col justify-between">
-                <p class="text-sm font-medium text-slate-500">Backed Out</p>
-                <h3 id="pipe-metric-backedout" class="text-3xl font-bold text-slate-800 mt-2">-</h3>
-                <p class="text-xs text-slate-400 mt-2">Declined / No Show</p>
+            
+            <div class="card border-t-[5px] border-t-rose-500">
+                <i class="ph-fill ph-user-minus metric-watermark text-rose-500"></i>
+                <p class="text-sm font-bold uppercase tracking-wider text-slate-500">Backed Out</p>
+                <h3 id="pipe-metric-backedout" class="text-4xl font-black text-slate-800 mt-2 tracking-tight">-</h3>
+                <div class="mt-4 flex items-center gap-2 text-xs font-medium text-slate-400 bg-slate-50 inline-block px-2.5 py-1 rounded-md dark:bg-slate-800/50">
+                    <i class="ph ph-x-circle"></i> Declined / No Show
+                </div>
             </div>
         </div>
 
+        <!-- Pipeline Charts -->
         <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
             <div class="card">
-                <h3 class="text-base font-semibold mb-4 text-slate-700">Hiring Sources</h3>
-                <div class="relative h-[250px] flex items-center justify-center">
+                <div class="flex items-center gap-2 mb-4">
+                    <div class="w-8 h-8 rounded-lg bg-blue-50 text-blue-600 flex items-center justify-center dark:bg-blue-900/30">
+                        <i class="ph ph-magnet text-lg"></i>
+                    </div>
+                    <h3 class="text-base font-bold text-slate-700">Hiring Sources</h3>
+                </div>
+                <div class="relative h-[280px] flex items-center justify-center">
                     <canvas id="sourceChart"></canvas>
                 </div>
             </div>
             <div class="card">
-                <h3 class="text-base font-semibold mb-4 text-slate-700">Final Outcome Distribution</h3>
-                <div class="relative h-[250px] flex items-center justify-center">
+                <div class="flex items-center gap-2 mb-4">
+                    <div class="w-8 h-8 rounded-lg bg-purple-50 text-purple-600 flex items-center justify-center dark:bg-purple-900/30">
+                        <i class="ph ph-funnel text-lg"></i>
+                    </div>
+                    <h3 class="text-base font-bold text-slate-700">Final Outcome Distribution</h3>
+                </div>
+                <div class="relative h-[280px] flex items-center justify-center">
                     <canvas id="funnelChart"></canvas>
                 </div>
             </div>
         </div>
 
+        <!-- Pipeline Table -->
         <div class="card overflow-hidden !p-0">
-            <div class="p-5 border-b border-slate-200 bg-slate-50">
-                <h3 class="text-base font-semibold text-slate-700">Selection Team Breakdown</h3>
-                <p class="text-xs text-slate-500">Click a Team Leader's name to view candidate details.</p>
+            <div class="p-5 border-b border-slate-200 bg-slate-50/50 dark:bg-slate-800/50">
+                <h3 class="text-lg font-black text-slate-800 flex items-center gap-2">
+                    <i class="ph-fill ph-users-three text-indigo-500"></i> Selection Team Breakdown
+                </h3>
+                <p class="text-xs font-medium text-slate-500 mt-1">Click a Team Leader's name to view candidate details.</p>
             </div>
             <div class="overflow-x-auto">
                 <table class="w-full text-left border-collapse whitespace-nowrap">
                     <thead>
-                        <tr class="bg-slate-100 text-slate-600 text-sm">
-                            <th class="px-5 py-3 font-medium">Selection Team / TL</th>
-                            <th class="px-5 py-3 font-medium text-right">Total Selected</th>
-                            <th class="px-5 py-3 font-medium text-right">Joined</th>
-                            <th class="px-5 py-3 font-medium text-right">Active / Joining</th>
-                            <th class="px-5 py-3 font-medium text-right bg-rose-50/50">Backed Out</th>
-                            <th class="px-5 py-3 font-medium text-right">Back Out %</th>
+                        <tr class="bg-white text-slate-500 text-xs uppercase tracking-wider font-bold border-b border-slate-200 dark:bg-slate-800">
+                            <th class="px-6 py-4">Selection Team / TL</th>
+                            <th class="px-4 py-4 text-center">Total Selected</th>
+                            <th class="px-4 py-4 text-center">Joined</th>
+                            <th class="px-4 py-4 text-center">Active / Joining</th>
+                            <th class="px-4 py-4 text-center bg-rose-50/30 dark:bg-rose-900/10">Backed Out</th>
+                            <th class="px-6 py-4 text-right">Back Out %</th>
                         </tr>
                     </thead>
-                    <tbody id="pipeline-table-body" class="divide-y divide-slate-200 text-sm">
+                    <tbody id="pipeline-table-body" class="divide-y divide-slate-100 text-sm font-medium dark:divide-slate-700">
                         <!-- Pipeline table rows generated by JS -->
                     </tbody>
                 </table>
@@ -237,27 +382,35 @@
     </main>
 
     <!-- SALES TEAM DETAILS MODAL -->
-    <div id="sales-team-modal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm hidden z-50 flex items-center justify-center p-4">
-        <div class="bg-white rounded-xl shadow-xl max-w-4xl w-full max-h-[90vh] flex flex-col relative">
-            <div class="p-5 border-b border-slate-200 flex justify-between items-center bg-slate-50 rounded-t-xl">
-                <h2 id="sales-modal-title" class="text-xl font-bold text-slate-800">Sales Team Details</h2>
-                <button onclick="document.getElementById('sales-team-modal').classList.add('hidden')" class="text-slate-400 hover:text-slate-700">
-                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+    <div id="sales-team-modal" class="fixed inset-0 bg-slate-900/40 backdrop-blur-sm hidden z-50 flex items-center justify-center p-4 transition-opacity">
+        <div class="bg-white dark:bg-slate-800 rounded-2xl shadow-2xl max-w-5xl w-full max-h-[90vh] flex flex-col relative border border-slate-200 dark:border-slate-700 overflow-hidden">
+            <div class="p-5 border-b border-slate-200 dark:border-slate-700 flex justify-between items-center bg-slate-50/50 dark:bg-slate-900/50">
+                <h2 id="sales-modal-title" class="text-xl font-black text-slate-800 flex items-center gap-2">
+                    <i class="ph-fill ph-users-three text-blue-500"></i> Sales Team Details
+                </h2>
+                <button onclick="document.getElementById('sales-team-modal').classList.add('hidden')" class="p-2 rounded-lg text-slate-400 hover:bg-slate-200 hover:text-slate-700 dark:hover:bg-slate-700 transition-colors">
+                    <i class="ph ph-x text-xl"></i>
                 </button>
             </div>
-            <div class="p-6 overflow-y-auto flex-1">
+            <div class="p-6 overflow-y-auto flex-1 bg-slate-50/30 dark:bg-slate-900/30">
                 <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
-                    <div class="border border-slate-200 rounded-lg overflow-hidden flex flex-col max-h-[60vh]">
-                        <div class="bg-blue-50 px-4 py-3 border-b border-slate-200 font-semibold text-blue-800 sticky top-0">Joined (Given)</div>
-                        <ul id="sales-modal-joined" class="p-4 overflow-y-auto flex-1 space-y-1"></ul>
+                    <div class="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl overflow-hidden flex flex-col max-h-[60vh] shadow-sm">
+                        <div class="bg-blue-50/80 dark:bg-blue-900/20 px-4 py-3 border-b border-blue-100 dark:border-blue-900/50 font-bold text-blue-800 dark:text-blue-400 flex items-center gap-2 sticky top-0 backdrop-blur-md">
+                            <i class="ph-fill ph-arrow-down-left"></i> Joined (Given)
+                        </div>
+                        <ul id="sales-modal-joined" class="p-4 overflow-y-auto flex-1 space-y-2"></ul>
                     </div>
-                    <div class="border border-slate-200 rounded-lg overflow-hidden flex flex-col max-h-[60vh]">
-                        <div class="bg-emerald-50 px-4 py-3 border-b border-slate-200 font-semibold text-emerald-800 sticky top-0">Active Reportees</div>
-                        <ul id="sales-modal-active" class="p-4 overflow-y-auto flex-1 space-y-1"></ul>
+                    <div class="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl overflow-hidden flex flex-col max-h-[60vh] shadow-sm">
+                        <div class="bg-emerald-50/80 dark:bg-emerald-900/20 px-4 py-3 border-b border-emerald-100 dark:border-emerald-900/50 font-bold text-emerald-800 dark:text-emerald-400 flex items-center gap-2 sticky top-0 backdrop-blur-md">
+                            <i class="ph-fill ph-user-check"></i> Active Reportees
+                        </div>
+                        <ul id="sales-modal-active" class="p-4 overflow-y-auto flex-1 space-y-2"></ul>
                     </div>
-                    <div class="border border-slate-200 rounded-lg overflow-hidden flex flex-col max-h-[60vh]">
-                        <div class="bg-rose-50 px-4 py-3 border-b border-slate-200 font-semibold text-rose-800 sticky top-0">Leavers (Left)</div>
-                        <ul id="sales-modal-left" class="p-4 overflow-y-auto flex-1 space-y-1"></ul>
+                    <div class="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl overflow-hidden flex flex-col max-h-[60vh] shadow-sm">
+                        <div class="bg-rose-50/80 dark:bg-rose-900/20 px-4 py-3 border-b border-rose-100 dark:border-rose-900/50 font-bold text-rose-800 dark:text-rose-400 flex items-center gap-2 sticky top-0 backdrop-blur-md">
+                            <i class="ph-fill ph-sign-out"></i> Leavers (Left)
+                        </div>
+                        <ul id="sales-modal-left" class="p-4 overflow-y-auto flex-1 space-y-2"></ul>
                     </div>
                 </div>
             </div>
@@ -265,27 +418,35 @@
     </div>
 
     <!-- HIRING PIPELINE TEAM MODAL -->
-    <div id="pipeline-team-modal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm hidden z-50 flex items-center justify-center p-4">
-        <div class="bg-white rounded-xl shadow-xl max-w-4xl w-full max-h-[90vh] flex flex-col relative">
-            <div class="p-5 border-b border-slate-200 flex justify-between items-center bg-slate-50 rounded-t-xl">
-                <h2 id="pipe-modal-tl-name" class="text-xl font-bold text-slate-800">Pipeline Details</h2>
-                <button onclick="document.getElementById('pipeline-team-modal').classList.add('hidden')" class="text-slate-400 hover:text-slate-700">
-                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+    <div id="pipeline-team-modal" class="fixed inset-0 bg-slate-900/40 backdrop-blur-sm hidden z-50 flex items-center justify-center p-4 transition-opacity">
+        <div class="bg-white dark:bg-slate-800 rounded-2xl shadow-2xl max-w-5xl w-full max-h-[90vh] flex flex-col relative border border-slate-200 dark:border-slate-700 overflow-hidden">
+            <div class="p-5 border-b border-slate-200 dark:border-slate-700 flex justify-between items-center bg-slate-50/50 dark:bg-slate-900/50">
+                <h2 id="pipe-modal-tl-name" class="text-xl font-black text-slate-800 flex items-center gap-2">
+                    <i class="ph-fill ph-funnel text-indigo-500"></i> Pipeline Details
+                </h2>
+                <button onclick="document.getElementById('pipeline-team-modal').classList.add('hidden')" class="p-2 rounded-lg text-slate-400 hover:bg-slate-200 hover:text-slate-700 dark:hover:bg-slate-700 transition-colors">
+                    <i class="ph ph-x text-xl"></i>
                 </button>
             </div>
-            <div class="p-6 overflow-y-auto flex-1">
+            <div class="p-6 overflow-y-auto flex-1 bg-slate-50/30 dark:bg-slate-900/30">
                 <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
-                    <div class="border border-slate-200 rounded-lg overflow-hidden flex flex-col max-h-[60vh]">
-                        <div class="bg-emerald-50 px-4 py-3 border-b border-slate-200 font-semibold text-emerald-800 sticky top-0">Joined</div>
-                        <ul id="pipe-modal-joined" class="p-4 overflow-y-auto flex-1 space-y-1"></ul>
+                    <div class="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl overflow-hidden flex flex-col max-h-[60vh] shadow-sm">
+                        <div class="bg-emerald-50/80 dark:bg-emerald-900/20 px-4 py-3 border-b border-emerald-100 dark:border-emerald-900/50 font-bold text-emerald-800 dark:text-emerald-400 flex items-center gap-2 sticky top-0 backdrop-blur-md">
+                            <i class="ph-fill ph-check-circle"></i> Joined
+                        </div>
+                        <ul id="pipe-modal-joined" class="p-4 overflow-y-auto flex-1 space-y-2"></ul>
                     </div>
-                    <div class="border border-slate-200 rounded-lg overflow-hidden flex flex-col max-h-[60vh]">
-                        <div class="bg-amber-50 px-4 py-3 border-b border-slate-200 font-semibold text-amber-800 sticky top-0">Active / Upcoming</div>
-                        <ul id="pipe-modal-upcoming" class="p-4 overflow-y-auto flex-1 space-y-1"></ul>
+                    <div class="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl overflow-hidden flex flex-col max-h-[60vh] shadow-sm">
+                        <div class="bg-amber-50/80 dark:bg-amber-900/20 px-4 py-3 border-b border-amber-100 dark:border-amber-900/50 font-bold text-amber-800 dark:text-amber-400 flex items-center gap-2 sticky top-0 backdrop-blur-md">
+                            <i class="ph-fill ph-hourglass-high"></i> Active / Upcoming
+                        </div>
+                        <ul id="pipe-modal-upcoming" class="p-4 overflow-y-auto flex-1 space-y-2"></ul>
                     </div>
-                    <div class="border border-slate-200 rounded-lg overflow-hidden flex flex-col max-h-[60vh]">
-                        <div class="bg-rose-50 px-4 py-3 border-b border-slate-200 font-semibold text-rose-800 sticky top-0">Backed Out</div>
-                        <ul id="pipe-modal-backedout" class="p-4 overflow-y-auto flex-1 space-y-1"></ul>
+                    <div class="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl overflow-hidden flex flex-col max-h-[60vh] shadow-sm">
+                        <div class="bg-rose-50/80 dark:bg-rose-900/20 px-4 py-3 border-b border-rose-100 dark:border-rose-900/50 font-bold text-rose-800 dark:text-rose-400 flex items-center gap-2 sticky top-0 backdrop-blur-md">
+                            <i class="ph-fill ph-user-minus"></i> Backed Out
+                        </div>
+                        <ul id="pipe-modal-backedout" class="p-4 overflow-y-auto flex-1 space-y-2"></ul>
                     </div>
                 </div>
             </div>
@@ -293,19 +454,21 @@
     </div>
 
     <!-- GLOBAL ACTIVE MODAL (Sales) -->
-    <div id="global-active-modal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm hidden z-50 flex items-center justify-center p-4">
-        <div class="bg-white rounded-xl shadow-xl max-w-2xl w-full max-h-[90vh] flex flex-col relative">
-            <div class="p-5 border-b border-slate-200 flex justify-between items-center bg-blue-50 rounded-t-xl">
+    <div id="global-active-modal" class="fixed inset-0 bg-slate-900/40 backdrop-blur-sm hidden z-50 flex items-center justify-center p-4 transition-opacity">
+        <div class="bg-white dark:bg-slate-800 rounded-2xl shadow-2xl max-w-2xl w-full max-h-[90vh] flex flex-col relative border border-slate-200 dark:border-slate-700 overflow-hidden">
+            <div class="p-5 border-b border-blue-100 dark:border-slate-700 flex justify-between items-center bg-blue-50/50 dark:bg-slate-900/50">
                 <div>
-                    <h2 class="text-xl font-bold text-blue-900">All Active Employees</h2>
-                    <p class="text-sm text-blue-700 mt-1">Total count: <span id="global-active-count" class="font-bold"></span></p>
+                    <h2 class="text-xl font-black text-blue-900 dark:text-blue-400 flex items-center gap-2">
+                        <i class="ph-fill ph-users-three"></i> All Active Employees
+                    </h2>
+                    <p class="text-sm font-medium text-blue-700 dark:text-blue-500 mt-1">Total count: <span id="global-active-count" class="font-bold bg-blue-100 dark:bg-blue-900 px-2 py-0.5 rounded-md"></span></p>
                 </div>
-                <button onclick="document.getElementById('global-active-modal').classList.add('hidden')" class="text-blue-400 hover:text-blue-700 bg-white rounded-full p-1">
-                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+                <button onclick="document.getElementById('global-active-modal').classList.add('hidden')" class="p-2 rounded-lg text-blue-400 hover:bg-blue-100 hover:text-blue-700 dark:hover:bg-slate-700 transition-colors">
+                    <i class="ph ph-x text-xl"></i>
                 </button>
             </div>
-            <div class="p-0 overflow-y-auto flex-1 bg-slate-50">
-                <ul id="global-active-list" class="p-4 space-y-2">
+            <div class="p-0 overflow-y-auto flex-1 bg-slate-50/50 dark:bg-slate-900/30">
+                <ul id="global-active-list" class="p-4 space-y-3">
                     <!-- Global active list generated by JS -->
                 </ul>
             </div>
@@ -313,32 +476,40 @@
     </div>
 
     <!-- UPLOAD MODAL -->
-    <div id="upload-modal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm hidden z-50 flex items-center justify-center p-4">
-        <div class="bg-white rounded-xl shadow-xl max-w-xl w-full p-6 relative max-h-[90vh] overflow-y-auto">
-            <button onclick="document.getElementById('upload-modal').classList.add('hidden')" class="absolute top-4 right-4 text-slate-400 hover:text-slate-700">
-                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+    <div id="upload-modal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm hidden z-50 flex items-center justify-center p-4 transition-opacity">
+        <div class="bg-white dark:bg-slate-800 rounded-2xl shadow-2xl max-w-xl w-full p-8 relative max-h-[90vh] overflow-y-auto border border-slate-200 dark:border-slate-700">
+            <button onclick="document.getElementById('upload-modal').classList.add('hidden')" class="absolute top-4 right-4 p-2 rounded-lg text-slate-400 hover:bg-slate-100 hover:text-slate-700 dark:hover:bg-slate-700 transition-colors">
+                <i class="ph ph-x text-xl"></i>
             </button>
-            <h2 class="text-xl font-bold text-slate-800 mb-4">Connect Your Data</h2>
+            <h2 class="text-2xl font-black text-slate-800 flex items-center gap-2 mb-6">
+                <i class="ph-fill ph-database text-blue-600"></i> Connect Your Data
+            </h2>
             
-            <div id="upload-error" class="hidden text-rose-600 bg-rose-50 border border-rose-200 rounded-lg p-3 text-sm font-medium mb-4 text-center"></div>
+            <div id="upload-error" class="hidden text-rose-600 bg-rose-50 border border-rose-200 rounded-xl p-4 text-sm font-bold mb-6 text-center shadow-sm"></div>
             
             <div class="space-y-4">
-                <div class="border-2 border-dashed border-slate-300 rounded-lg p-4 text-center hover:bg-slate-50 transition-colors">
-                    <p class="font-medium text-slate-700 mb-1">1. Employee Details CSV (Sales)</p>
-                    <input type="file" id="file-emp" accept=".csv" class="text-sm text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100 w-full cursor-pointer">
+                <div class="border-2 border-dashed border-slate-300 dark:border-slate-600 rounded-xl p-5 text-center hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors group cursor-pointer relative overflow-hidden">
+                    <div class="absolute inset-0 bg-blue-50/50 dark:bg-blue-900/10 opacity-0 group-hover:opacity-100 transition-opacity"></div>
+                    <i class="ph ph-file-csv text-3xl text-blue-400 mb-2"></i>
+                    <p class="font-bold text-slate-700 mb-2">1. Employee Details (Sales)</p>
+                    <input type="file" id="file-emp" accept=".csv" class="relative z-10 text-sm text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-bold file:bg-blue-100 file:text-blue-700 hover:file:bg-blue-200 w-full cursor-pointer transition-colors">
                 </div>
 
-                <div class="border-2 border-dashed border-slate-300 rounded-lg p-4 text-center hover:bg-slate-50 transition-colors">
-                    <p class="font-medium text-slate-700 mb-1">2. Seat Capacity CSV (Sales - Optional)</p>
-                    <input type="file" id="file-seat" accept=".csv" class="text-sm text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-emerald-50 file:text-emerald-700 hover:file:bg-emerald-100 w-full cursor-pointer">
+                <div class="border-2 border-dashed border-slate-300 dark:border-slate-600 rounded-xl p-5 text-center hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors group cursor-pointer relative overflow-hidden">
+                    <div class="absolute inset-0 bg-emerald-50/50 dark:bg-emerald-900/10 opacity-0 group-hover:opacity-100 transition-opacity"></div>
+                    <i class="ph ph-armchair text-3xl text-emerald-400 mb-2"></i>
+                    <p class="font-bold text-slate-700 mb-2">2. Seat Capacity (Sales - Optional)</p>
+                    <input type="file" id="file-seat" accept=".csv" class="relative z-10 text-sm text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-bold file:bg-emerald-100 file:text-emerald-700 hover:file:bg-emerald-200 w-full cursor-pointer transition-colors">
                 </div>
 
-                <div class="border-2 border-dashed border-slate-300 rounded-lg p-4 text-center hover:bg-slate-50 transition-colors">
-                    <p class="font-medium text-slate-700 mb-1">3. Batch Selections CSV (Pipeline Hiring)</p>
-                    <input type="file" id="file-pipeline" accept=".csv" class="text-sm text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-purple-50 file:text-purple-700 hover:file:bg-purple-100 w-full cursor-pointer">
+                <div class="border-2 border-dashed border-slate-300 dark:border-slate-600 rounded-xl p-5 text-center hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors group cursor-pointer relative overflow-hidden">
+                    <div class="absolute inset-0 bg-purple-50/50 dark:bg-purple-900/10 opacity-0 group-hover:opacity-100 transition-opacity"></div>
+                    <i class="ph ph-users-three text-3xl text-purple-400 mb-2"></i>
+                    <p class="font-bold text-slate-700 mb-2">3. Batch Selections (Pipeline)</p>
+                    <input type="file" id="file-pipeline" accept=".csv" class="relative z-10 text-sm text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-bold file:bg-purple-100 file:text-purple-700 hover:file:bg-purple-200 w-full cursor-pointer transition-colors">
                 </div>
 
-                <button onclick="processUploads()" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-medium py-3 rounded-lg mt-2 transition-colors">
+                <button onclick="processUploads()" class="w-full bg-gradient-to-r from-slate-800 to-slate-900 hover:from-slate-900 hover:to-black dark:from-blue-600 dark:to-indigo-600 text-white font-bold py-3.5 rounded-xl mt-4 transition-all shadow-lg hover:shadow-xl hover:-translate-y-0.5 active:translate-y-0">
                     Process Uploaded Files
                 </button>
             </div>
@@ -370,12 +541,11 @@
             const isDark = document.documentElement.classList.contains('dark');
             const icon = document.getElementById('theme-icon');
             if (isDark) {
-                icon.innerHTML = '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z"></path>';
+                icon.className = 'ph ph-sun text-lg';
             } else {
-                icon.innerHTML = '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"></path>';
+                icon.className = 'ph ph-moon text-lg';
             }
             
-            // Adjust chart text color to match the theme
             Chart.defaults.color = isDark ? '#cbd5e1' : '#64748b';
             for (let id in chartInstances) {
                 chartInstances[id].update();
@@ -390,13 +560,21 @@
             const pipeContent = document.getElementById('pipeline-content');
 
             if (tabName === 'sales') {
-                salesTab.className = "pb-3 px-2 text-sm font-bold border-b-2 border-blue-600 text-blue-700 flex items-center gap-2 transition-colors";
-                pipeTab.className = "pb-3 px-2 text-sm font-medium border-b-2 border-transparent text-slate-500 hover:text-slate-700 flex items-center gap-2 transition-colors";
+                salesTab.className = "pb-3 px-2 text-sm font-bold border-b-[3px] border-blue-600 text-blue-700 flex items-center gap-2 transition-colors";
+                salesTab.innerHTML = '<i class="ph-fill ph-users-three text-lg"></i> Sales Dept (Active)';
+                
+                pipeTab.className = "pb-3 px-2 text-sm font-medium border-b-[3px] border-transparent text-slate-500 hover:text-slate-700 flex items-center gap-2 transition-colors";
+                pipeTab.innerHTML = '<i class="ph ph-funnel text-lg"></i> Hiring Pipeline';
+                
                 salesContent.classList.remove('hidden');
                 pipeContent.classList.add('hidden');
             } else {
-                pipeTab.className = "pb-3 px-2 text-sm font-bold border-b-2 border-blue-600 text-blue-700 flex items-center gap-2 transition-colors";
-                salesTab.className = "pb-3 px-2 text-sm font-medium border-b-2 border-transparent text-slate-500 hover:text-slate-700 flex items-center gap-2 transition-colors";
+                pipeTab.className = "pb-3 px-2 text-sm font-bold border-b-[3px] border-indigo-600 text-indigo-700 flex items-center gap-2 transition-colors";
+                pipeTab.innerHTML = '<i class="ph-fill ph-funnel text-lg"></i> Hiring Pipeline';
+                
+                salesTab.className = "pb-3 px-2 text-sm font-medium border-b-[3px] border-transparent text-slate-500 hover:text-slate-700 flex items-center gap-2 transition-colors";
+                salesTab.innerHTML = '<i class="ph ph-users-three text-lg"></i> Sales Dept (Active)';
+                
                 pipeContent.classList.remove('hidden');
                 salesContent.classList.add('hidden');
             }
@@ -472,7 +650,7 @@
             const pipelineFile = document.getElementById('file-pipeline').files[0];
             
             document.getElementById('upload-modal').classList.add('hidden');
-            document.getElementById('connection-status').innerHTML = `<span class="w-2 h-2 rounded-full bg-emerald-500"></span> Uploaded Data`;
+            document.getElementById('connection-status').innerHTML = `<span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span> Uploaded Data`;
             
             if (empFile) rawEmpData = await readCSV(empFile);
             if (seatFile) rawSeatData = await readCSV(seatFile);
@@ -480,11 +658,12 @@
             
             populateFilters();
             applyFilters();
-            processPipelineData(); // Process the new tab data
         }
 
         function populateFilters() {
             const timeSelect = document.getElementById('time-filter');
+            const currentFilter = timeSelect.value; 
+
             timeSelect.innerHTML = `<option value="overall">Overall (All Time)</option>`;
             
             let years = new Set();
@@ -522,10 +701,15 @@
                     </optgroup>
                 `;
             });
-            let now = new Date();
-            let defVal = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}`;
-            if(timeSelect.querySelector(`option[value="${defVal}"]`)) {
-                timeSelect.value = defVal;
+            
+            if (currentFilter && timeSelect.querySelector(`option[value="${currentFilter}"]`)) {
+                timeSelect.value = currentFilter;
+            } else {
+                let now = new Date();
+                let defVal = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}`;
+                if(timeSelect.querySelector(`option[value="${defVal}"]`)) {
+                    timeSelect.value = defVal;
+                }
             }
         }
 
@@ -562,7 +746,7 @@
                 if (tl) teamLeadersList.add(tl.toLowerCase());
             });
 
-            // Seniors to Ignore
+            // Seniors/Roles to Ignore
             const seniorsToIgnore = ['krishna mohan pandey', 'bhimesh kumar', 'rimesh kumar'];
 
             let totalLeavers = 0, totalJoined = 0, headCountStart = 0, headCountEnd = 0;
@@ -580,7 +764,7 @@
                 const tlName = getCol(row, 'Team Leader').trim();
                 const lowerTl = tlName.toLowerCase();
                 
-                // Exclude specific departments and specific managers! (Kunal, Patwari, Support)
+                // Exclude specific departments and specific managers! 
                 if (dept.includes('support') || dept.includes('operations') || dept.includes('admin') || dept.includes('hr') || dept.includes('research')) return; 
                 if (lowerTl.includes('kunal') || lowerTl.includes('patwari') || lowerTl.includes('support')) return;
 
@@ -739,57 +923,65 @@
                 finalCalculatedCapacity += t.capacity;
                 globalVacantNum += t.vacNum;
 
-                let attColor = t.att > 5 ? 'text-rose-600 bg-rose-50' : (t.att > 0 ? 'text-amber-600 bg-amber-50' : 'text-emerald-600 bg-emerald-50');
-                let lvgText = t.leftVsGiven === 'Infinity' ? `<span class="text-rose-500 font-bold">${t.leavers} Left (0 Joined)</span>` : 
-                              (t.leftVsGiven > 100 ? `<span class="text-rose-500 font-bold">${t.leftVsGiven}%</span>` : `<span class="text-slate-600">${t.leftVsGiven}%</span>`);
+                let attColor = t.att > 5 ? 'bg-rose-100 text-rose-700 dark:bg-rose-900/40 dark:text-rose-300 border-rose-200' : (t.att > 0 ? 'bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300 border-amber-200' : 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-300 border-emerald-200');
+                
+                let lvgText = t.leftVsGiven === 'Infinity' ? `<span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-bold bg-rose-100 text-rose-700">${t.leavers} Left</span>` : 
+                              (t.leftVsGiven > 100 ? `<span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-bold bg-rose-100 text-rose-700">${t.leftVsGiven}%</span>` : `<span class="text-slate-600 dark:text-slate-400 font-bold">${t.leftVsGiven}%</span>`);
 
-                let vacColor = t.capacity <= 0 ? 'text-slate-400' : 'text-emerald-600';
+                let vacColor = t.capacity <= 0 ? 'text-slate-400 font-medium' : 'text-emerald-600 font-black';
                 let vacDisplay = t.capacity <= 0 ? '-' : t.vacNum;
 
                 tableHTML += `
-                    <tr class="hover:bg-slate-50 transition-colors">
-                        <td class="px-5 py-3 font-medium text-blue-600 cursor-pointer hover:text-blue-800 underline decoration-blue-300 underline-offset-4" onclick="showTeamDetails('${t.key}')" title="Click to view employees">
-                            ${t.name}
+                    <tr class="hover:bg-slate-50 dark:hover:bg-slate-800/80 transition-colors group">
+                        <td class="px-6 py-4 font-bold text-slate-700 dark:text-slate-200 cursor-pointer group-hover:text-blue-600 dark:group-hover:text-blue-400" onclick="showTeamDetails('${t.key}')" title="Click to view employees">
+                            <span class="flex items-center gap-2">
+                                <div class="w-2 h-2 rounded-full bg-slate-300 group-hover:bg-blue-500 transition-colors"></div>
+                                ${t.name}
+                            </span>
                         </td>
-                        <td class="px-5 py-3 text-right text-slate-500 font-medium">${t.capacity || '-'}</td>
-                        <td class="px-5 py-3 text-right font-bold text-slate-800">${t.active}</td>
-                        <td class="px-5 py-3 text-right ${vacColor}">${vacDisplay}</td>
-                        <td class="px-5 py-3 text-right bg-blue-50/20 text-blue-600 font-bold">+${t.joined}</td>
-                        <td class="px-5 py-3 text-right font-bold text-rose-500 bg-rose-50/20">-${t.leavers}</td>
-                        <td class="px-5 py-3 text-right bg-amber-50/20">${lvgText}</td>
-                        <td class="px-5 py-3 text-right">
-                            <span class="px-2 py-1 rounded text-xs font-bold ${attColor}">${t.att}%</span>
+                        <td class="px-4 py-4 text-center text-slate-500 font-bold">${t.capacity || '-'}</td>
+                        <td class="px-4 py-4 text-center">
+                            <span class="inline-flex items-center justify-center min-w-[2rem] px-2 py-1 rounded-full bg-slate-100 text-slate-700 font-black dark:bg-slate-700 dark:text-slate-200 shadow-sm">${t.active}</span>
+                        </td>
+                        <td class="px-4 py-4 text-center ${vacColor}">${vacDisplay}</td>
+                        <td class="px-4 py-4 text-center bg-blue-50/10">
+                            <span class="inline-flex items-center text-blue-600 font-black"><i class="ph-bold ph-plus text-xs mr-0.5"></i>${t.joined}</span>
+                        </td>
+                        <td class="px-4 py-4 text-center bg-rose-50/10">
+                            <span class="inline-flex items-center text-rose-500 font-black"><i class="ph-bold ph-minus text-xs mr-0.5"></i>${t.leavers}</span>
+                        </td>
+                        <td class="px-4 py-4 text-center bg-amber-50/10">${lvgText}</td>
+                        <td class="px-6 py-4 text-right">
+                            <span class="inline-flex items-center px-2.5 py-1 rounded-md text-xs font-black border ${attColor} shadow-sm">${t.att}%</span>
                         </td>
                     </tr>
                 `;
             });
             
-            document.getElementById('tl-table-body').innerHTML = tableHTML || `<tr><td colspan="8" class="text-center py-6 text-slate-500">No active Sales teams or exits found for this time period</td></tr>`;
+            document.getElementById('tl-table-body').innerHTML = tableHTML || `<tr><td colspan="8" class="text-center py-8 text-slate-400 font-medium italic">No active Sales teams or exits found for this time period</td></tr>`;
 
             let averageHC = (headCountStart + finalCalculatedActive) / 2;
             let attrition = averageHC > 0 ? ((totalLeavers / averageHC) * 100).toFixed(1) : 0;
             
             document.getElementById('metric-active').innerText = finalCalculatedActive;
             document.getElementById('metric-vacant').innerText = finalCalculatedCapacity > 0 ? globalVacantNum : '-';
-            document.getElementById('metric-capacity').innerText = `Total Capacity: ${finalCalculatedCapacity > 0 ? finalCalculatedCapacity : 'N/A'}`;
+            document.getElementById('metric-capacity').innerHTML = `Total Capacity: <strong>${finalCalculatedCapacity > 0 ? finalCalculatedCapacity : 'N/A'}</strong>`;
             document.getElementById('metric-attrition').innerText = `${attrition}%`;
 
-            renderPieChart('genderChart', Object.keys(genderCount), Object.values(genderCount), ['#3b82f6', '#ec4899', '#94a3b8']);
+            renderPieChart('genderChart', Object.keys(genderCount), Object.values(genderCount), ['#6366f1', '#ec4899', '#94a3b8']);
             
             const exitLabels = Object.keys(exitTypes).length ? Object.keys(exitTypes) : ['No Exits'];
             const exitData = Object.keys(exitTypes).length ? Object.values(exitTypes) : [1];
-            renderPieChart('exitChart', exitLabels, exitData, ['#ef4444', '#f59e0b', '#8b5cf6', '#64748b']);
+            renderPieChart('exitChart', exitLabels, exitData, ['#f43f5e', '#f59e0b', '#8b5cf6', '#64748b']);
             
-            renderBarChart('tenureChart', Object.keys(tenureBuckets), Object.values(tenureBuckets));
+            renderBarChart('tenureChart', Object.keys(tenureBuckets), Object.values(tenureBuckets), '#14b8a6');
 
-            // Run pipeline processing based on current time filter
             processPipelineData();
         }
 
         function processPipelineData() {
             if (!rawPipelineData || rawPipelineData.length === 0) return;
 
-            // Recalculate date filter
             const timeFilter = document.getElementById('time-filter').value;
             let startDate = new Date(1900, 0, 1), endDate = new Date(2100, 11, 31);
             if (timeFilter !== 'overall') {
@@ -822,12 +1014,11 @@
 
             rawPipelineData.forEach(row => {
                 const name = getCol(row, 'Name');
-                if (!name) return; // Skip completely empty rows
+                if (!name) return; 
 
                 const dojStr = getCol(row, 'DOJ', ['Date of Joining']).trim();
                 const doj = parseDate(dojStr);
 
-                // Filter by Date of Joining (Current Selected Time Period)
                 let inRange = false;
                 if (timeFilter === 'overall') {
                     inRange = true;
@@ -837,7 +1028,7 @@
                     }
                 }
                 
-                if (!inRange) return; // Ignore candidates not falling into the month block
+                if (!inRange) return;
 
                 totalSelected++;
 
@@ -845,7 +1036,6 @@
                 let source = getCol(row, 'Source').trim() || 'Unknown';
                 let teamRaw = getCol(row, 'Selection Team', ['TL', 'Manager']).trim() || 'Unknown';
 
-                // Team Leader Name logic (Remove Seniors if secondary TL exists, keep only 1 name)
                 let names = teamRaw.split(/\s*(?:[/,&]|\band\b|-)\s*/i).filter(n => n.trim() !== '');
                 let validNames = [];
                 let seniorNames = [];
@@ -860,14 +1050,13 @@
                 
                 let team = teamRaw;
                 if (validNames.length > 0) {
-                    team = validNames[0]; // Take only the first active non-senior team leader
+                    team = validNames[0]; 
                 } else if (seniorNames.length > 0) {
-                    team = seniorNames[0]; // Take only one senior if they are the only ones
+                    team = seniorNames[0]; 
                 } else {
                     team = 'Unknown';
                 }
 
-                // Logic checks based on standard responses
                 let isBackedOut = outcome.includes('back') || outcome.includes('no show') || outcome.includes('decline') || outcome.includes('drop') || outcome.includes('reject') || outcome.includes('not joining');
                 let isJoined = outcome.includes('join') && !isBackedOut && !outcome.includes('not');
                 
@@ -878,7 +1067,7 @@
                     joinedCount++;
                     outcomeCounts['Joined'] = (outcomeCounts['Joined'] || 0) + 1;
                 } else {
-                    upcomingJoiners++; // If not joined and not backed out, they are upcoming
+                    upcomingJoiners++; 
                     outcomeCounts['Pending / Upcoming'] = (outcomeCounts['Pending / Upcoming'] || 0) + 1;
                 }
 
@@ -893,13 +1082,12 @@
 
                 teamStats[team].selected++;
                 
-                // Format the detail string to clearly emphasize DOJ
                 let formattedDoj = doj ? doj.toLocaleDateString('en-GB', {day: '2-digit', month: 'short', year: 'numeric'}) : (dojStr || 'TBD');
-                let detailString = `${name} <span class="text-xs font-semibold px-2 py-0.5 rounded bg-slate-100 border border-slate-200 text-slate-600">DOJ: ${formattedDoj}</span>`;
+                let detailString = `<span class="font-bold text-slate-700 dark:text-slate-200">${name}</span> <span class="text-xs font-bold px-2 py-0.5 rounded-full bg-slate-100 border border-slate-200 text-slate-500 dark:bg-slate-700 dark:border-slate-600 dark:text-slate-300"><i class="ph ph-calendar-blank mr-1"></i>${formattedDoj}</span>`;
 
                 if (isBackedOut) {
                     teamStats[team].backedOut++;
-                    teamStats[team].listBackedOut.push(name + ` <span class="text-xs text-rose-500 font-medium ml-1">(${outcome || 'Backed Out'})</span>`);
+                    teamStats[team].listBackedOut.push(`<span class="font-bold text-slate-700 dark:text-slate-200">${name}</span> <span class="text-xs text-rose-600 bg-rose-50 px-2 py-0.5 rounded-full font-bold ml-1 dark:bg-rose-900/30">(${outcome || 'Backed Out'})</span>`);
                 } else if (isJoined) {
                     teamStats[team].joined++;
                     teamStats[team].listJoined.push(detailString);
@@ -909,63 +1097,69 @@
                 }
             });
 
-            // Update Metrics Cards
             document.getElementById('pipe-metric-selected').innerText = totalSelected;
             document.getElementById('pipe-metric-joined').innerText = joinedCount;
             document.getElementById('pipe-metric-upcoming').innerText = upcomingJoiners;
             document.getElementById('pipe-metric-backedout').innerText = backedOut;
 
-            // Render Leaderboard Table
             let tableHTML = '';
             let teamArray = Object.values(teamStats).sort((a,b) => b.selected - a.selected);
-            window.globalPipelineTeams = teamStats; // Save globally for modal clicking
+            window.globalPipelineTeams = teamStats; 
 
             teamArray.forEach(t => {
                 let backOutPercentage = t.selected > 0 ? Math.round((t.backedOut / t.selected) * 100) : 0;
-                let boColor = backOutPercentage > 20 ? 'text-rose-600 font-bold' : 'text-slate-600';
+                let boColorClass = backOutPercentage > 20 ? 'bg-rose-100 text-rose-700 border-rose-200 dark:bg-rose-900/40 dark:text-rose-300' : 'bg-slate-100 text-slate-600 border-slate-200 dark:bg-slate-700 dark:text-slate-300';
 
                 tableHTML += `
-                    <tr class="hover:bg-slate-50 transition-colors">
-                        <td class="px-5 py-3 font-medium text-blue-600 cursor-pointer hover:text-blue-800 underline decoration-blue-300 underline-offset-4" onclick="showPipelineTeamDetails('${t.name}')">
-                            ${t.name}
+                    <tr class="hover:bg-slate-50 dark:hover:bg-slate-800/80 transition-colors group">
+                        <td class="px-6 py-4 font-bold text-slate-700 dark:text-slate-200 cursor-pointer group-hover:text-indigo-600 dark:group-hover:text-indigo-400" onclick="showPipelineTeamDetails('${t.name}')">
+                            <span class="flex items-center gap-2">
+                                <div class="w-2 h-2 rounded-full bg-slate-300 group-hover:bg-indigo-500 transition-colors"></div>
+                                ${t.name}
+                            </span>
                         </td>
-                        <td class="px-5 py-3 text-right font-bold text-slate-800">${t.selected}</td>
-                        <td class="px-5 py-3 text-right text-emerald-600 font-bold">${t.joined}</td>
-                        <td class="px-5 py-3 text-right text-amber-600 font-bold">${t.upcoming}</td>
-                        <td class="px-5 py-3 text-right text-rose-500 font-bold bg-rose-50/20">${t.backedOut}</td>
-                        <td class="px-5 py-3 text-right ${boColor}">${backOutPercentage}%</td>
+                        <td class="px-4 py-4 text-center">
+                            <span class="inline-flex items-center justify-center min-w-[2rem] px-2 py-1 rounded-full bg-indigo-50 text-indigo-700 font-black dark:bg-indigo-900/30 dark:text-indigo-300 shadow-sm">${t.selected}</span>
+                        </td>
+                        <td class="px-4 py-4 text-center text-emerald-600 font-black">${t.joined}</td>
+                        <td class="px-4 py-4 text-center text-amber-600 font-black">${t.upcoming}</td>
+                        <td class="px-4 py-4 text-center bg-rose-50/10">
+                            <span class="inline-flex items-center text-rose-500 font-black"><i class="ph-bold ph-user-minus text-xs mr-1"></i>${t.backedOut}</span>
+                        </td>
+                        <td class="px-6 py-4 text-right">
+                            <span class="inline-flex items-center px-2.5 py-1 rounded-md text-xs font-black border ${boColorClass} shadow-sm">${backOutPercentage}%</span>
+                        </td>
                     </tr>
                 `;
             });
             
-            document.getElementById('pipeline-table-body').innerHTML = tableHTML || `<tr><td colspan="6" class="text-center py-6 text-slate-500">No hiring data found for this period.</td></tr>`;
+            document.getElementById('pipeline-table-body').innerHTML = tableHTML || `<tr><td colspan="6" class="text-center py-8 text-slate-400 font-medium italic">No hiring data found for this period.</td></tr>`;
 
-            // Render Pipeline Charts
             let srcLabels = Object.keys(sourceCounts);
             let srcData = Object.values(sourceCounts);
             renderPieChart('sourceChart', srcLabels, srcData, ['#3b82f6', '#ec4899', '#8b5cf6', '#f59e0b', '#10b981', '#64748b', '#0ea5e9']);
 
             let outLabels = Object.keys(outcomeCounts);
             let outData = Object.values(outcomeCounts);
-            renderBarChart('funnelChart', outLabels, outData);
+            renderBarChart('funnelChart', outLabels, outData, '#8b5cf6');
         }
 
         function showTeamDetails(tlKey) {
             const stats = window.globalTLStats[tlKey];
             if (!stats) return;
 
-            document.getElementById('sales-modal-title').innerText = `${stats.display} - Sales Team Details`;
+            document.getElementById('sales-modal-title').innerHTML = `<i class="ph-fill ph-users-three text-blue-500"></i> ${stats.display} - Sales Team`;
 
-            const formatList = (arr) => arr.length > 0 
-                ? arr.map(item => `<li class="py-2 border-b border-slate-100 last:border-0 text-sm text-slate-700 flex items-start gap-2">
-                                     <span class="mt-1 w-1.5 h-1.5 rounded-full bg-slate-300 flex-shrink-0"></span>
+            const formatList = (arr, emptyMsg) => arr.length > 0 
+                ? arr.map(item => `<li class="py-2.5 border-b border-slate-100 dark:border-slate-700/50 last:border-0 text-sm font-medium text-slate-600 dark:text-slate-300 flex items-center gap-2">
+                                     <i class="ph-fill ph-caret-right text-slate-300 dark:text-slate-600 text-xs"></i>
                                      ${item}
                                    </li>`).join('') 
-                : `<li class="py-2 text-sm text-slate-400 italic">No employees found in this category.</li>`;
+                : `<li class="py-3 text-sm text-slate-400 italic text-center border-2 border-dashed border-slate-200 dark:border-slate-700 rounded-lg mt-2">${emptyMsg}</li>`;
 
-            document.getElementById('sales-modal-active').innerHTML = formatList(stats.activeList);
-            document.getElementById('sales-modal-joined').innerHTML = formatList(stats.joinedList);
-            document.getElementById('sales-modal-left').innerHTML = formatList(stats.leaversList);
+            document.getElementById('sales-modal-active').innerHTML = formatList(stats.activeList, "No active employees");
+            document.getElementById('sales-modal-joined').innerHTML = formatList(stats.joinedList, "No new joiners");
+            document.getElementById('sales-modal-left').innerHTML = formatList(stats.leaversList, "No leavers");
 
             document.getElementById('sales-team-modal').classList.remove('hidden');
         }
@@ -974,18 +1168,18 @@
             const stats = window.globalPipelineTeams[tlName];
             if (!stats) return;
 
-            document.getElementById('pipe-modal-tl-name').innerText = `${stats.name} - Hiring Pipeline Details`;
+            document.getElementById('pipe-modal-tl-name').innerHTML = `<i class="ph-fill ph-funnel text-indigo-500"></i> ${stats.name} - Hiring Pipeline`;
 
-            const formatList = (arr) => arr.length > 0 
-                ? arr.map(item => `<li class="py-2 border-b border-slate-100 last:border-0 text-sm font-medium text-slate-700 flex items-center gap-2">
-                                     <span class="w-1.5 h-1.5 rounded-full bg-slate-400 flex-shrink-0"></span>
+            const formatList = (arr, emptyMsg) => arr.length > 0 
+                ? arr.map(item => `<li class="py-2.5 border-b border-slate-100 dark:border-slate-700/50 last:border-0 text-sm flex items-center gap-2">
+                                     <i class="ph-fill ph-caret-right text-slate-300 dark:text-slate-600 text-xs"></i>
                                      <span class="flex-1 flex items-center justify-between">${item}</span>
                                    </li>`).join('') 
-                : `<li class="py-2 text-sm text-slate-400 italic">No candidates found in this category.</li>`;
+                : `<li class="py-3 text-sm text-slate-400 italic text-center border-2 border-dashed border-slate-200 dark:border-slate-700 rounded-lg mt-2">${emptyMsg}</li>`;
 
-            document.getElementById('pipe-modal-joined').innerHTML = formatList(stats.listJoined);
-            document.getElementById('pipe-modal-upcoming').innerHTML = formatList(stats.listUpcoming);
-            document.getElementById('pipe-modal-backedout').innerHTML = formatList(stats.listBackedOut);
+            document.getElementById('pipe-modal-joined').innerHTML = formatList(stats.listJoined, "No candidates joined");
+            document.getElementById('pipe-modal-upcoming').innerHTML = formatList(stats.listUpcoming, "No upcoming candidates");
+            document.getElementById('pipe-modal-backedout').innerHTML = formatList(stats.listBackedOut, "No candidates backed out");
 
             document.getElementById('pipeline-team-modal').classList.remove('hidden');
         }
@@ -999,15 +1193,15 @@
             });
             
             const html = list.map(emp => `
-                <li class="py-3 bg-white rounded-lg shadow-sm border border-slate-200 px-4 flex justify-between items-center hover:border-blue-300 transition-colors">
+                <li class="py-3 px-5 bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-slate-200 dark:border-slate-700 flex justify-between items-center hover:border-blue-400 dark:hover:border-blue-500 transition-colors">
                     <div>
-                        <p class="text-sm font-bold text-slate-800">${emp.name} <span class="text-xs text-slate-400 font-normal ml-1">ID: ${emp.id || 'N/A'}</span></p>
-                        <p class="text-xs text-slate-500 mt-0.5">Reporting to: <span class="font-medium text-slate-700">${emp.tl}</span></p>
+                        <p class="text-sm font-bold text-slate-800 dark:text-slate-200">${emp.name} <span class="text-xs text-slate-400 font-medium ml-2 bg-slate-100 dark:bg-slate-700 px-2 py-0.5 rounded">ID: ${emp.id || 'N/A'}</span></p>
+                        <p class="text-xs font-semibold text-slate-500 dark:text-slate-400 mt-1 flex items-center gap-1"><i class="ph-fill ph-user-circle"></i> Reporting to: <span class="text-blue-600 dark:text-blue-400">${emp.tl}</span></p>
                     </div>
                 </li>
             `).join('');
             
-            document.getElementById('global-active-list').innerHTML = html || '<li class="py-4 text-center text-slate-500">No active employees found.</li>';
+            document.getElementById('global-active-list').innerHTML = html || '<li class="py-8 text-center text-slate-400 font-medium italic">No active employees found.</li>';
             document.getElementById('global-active-count').innerText = list.length;
             document.getElementById('global-active-modal').classList.remove('hidden');
         }
@@ -1015,13 +1209,40 @@
         function renderPieChart(canvasId, labels, data, colors) {
             if (chartInstances[canvasId]) chartInstances[canvasId].destroy();
             const ctx = document.getElementById(canvasId).getContext('2d');
-            chartInstances[canvasId] = new Chart(ctx, { type: 'doughnut', data: { labels: labels, datasets: [{ data: data, backgroundColor: colors, borderWidth: 0 }] }, options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'bottom', labels: { boxWidth: 12 } } }, cutout: '60%' } });
+            chartInstances[canvasId] = new Chart(ctx, { 
+                type: 'doughnut', 
+                data: { labels: labels, datasets: [{ data: data, backgroundColor: colors, borderWidth: 0, hoverOffset: 4 }] }, 
+                options: { 
+                    responsive: true, 
+                    maintainAspectRatio: false, 
+                    plugins: { 
+                        legend: { position: 'bottom', labels: { padding: 20, usePointStyle: true, pointStyle: 'circle' } },
+                        tooltip: { backgroundColor: 'rgba(15, 23, 42, 0.9)', padding: 12, cornerRadius: 8, titleFont: {size: 14}, bodyFont: {size: 14, weight: 'bold'} }
+                    }, 
+                    cutout: '65%' 
+                } 
+            });
         }
 
-        function renderBarChart(canvasId, labels, data) {
+        function renderBarChart(canvasId, labels, data, color) {
             if (chartInstances[canvasId]) chartInstances[canvasId].destroy();
             const ctx = document.getElementById(canvasId).getContext('2d');
-            chartInstances[canvasId] = new Chart(ctx, { type: 'bar', data: { labels: labels, datasets: [{ data: data, backgroundColor: '#3b82f6', borderRadius: 4 }] }, options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true, grid: { borderDash: [2, 2] } }, x: { grid: { display: false } } } } });
+            chartInstances[canvasId] = new Chart(ctx, { 
+                type: 'bar', 
+                data: { labels: labels, datasets: [{ data: data, backgroundColor: color, borderRadius: 6, maxBarThickness: 40 }] }, 
+                options: { 
+                    responsive: true, 
+                    maintainAspectRatio: false, 
+                    plugins: { 
+                        legend: { display: false },
+                        tooltip: { backgroundColor: 'rgba(15, 23, 42, 0.9)', padding: 12, cornerRadius: 8, titleFont: {size: 13}, bodyFont: {size: 15, weight: 'bold'}, displayColors: false }
+                    }, 
+                    scales: { 
+                        y: { beginAtZero: true, grid: { borderDash: [4, 4], color: 'rgba(148, 163, 184, 0.2)' }, border: {display: false} }, 
+                        x: { grid: { display: false }, border: {display: false} } 
+                    } 
+                } 
+            });
         }
 
         const sheetId = '114vKYM3bz7xqj-40_CtsUl5gKkZLsiOavaFjD87iFrs';
@@ -1030,7 +1251,6 @@
         const pipelineUrl = `https://docs.google.com/spreadsheets/d/${sheetId}/gviz/tq?tqx=out:csv&sheet=Batch%20Selections`;
 
         const fetchCsv = (url) => new Promise((resolve, reject) => {
-            // Adding a timestamp cache-buster to ensure we get the absolute latest data on every refresh
             const cacheBustUrl = url + `&_t=${new Date().getTime()}`;
             Papa.parse(cacheBustUrl, { download: true, header: true, skipEmptyLines: true, transformHeader: h => h ? h.trim() : '', complete: res => resolve(res.data), error: err => reject(err) });
         });
@@ -1039,9 +1259,9 @@
             const statusEl = document.getElementById('connection-status');
             
             try {
-                // Show brief syncing state
                 if (rawEmpData.length > 0) {
-                    statusEl.innerHTML = `<span class="flex items-center gap-1 text-blue-600 font-medium"><span class="w-2 h-2 rounded-full bg-blue-500 animate-pulse"></span> Syncing...</span>`;
+                    statusEl.className = "flex items-center gap-1.5 text-blue-600 bg-blue-50 px-2 py-0.5 rounded-full border border-blue-200 dark:bg-blue-900/30 dark:border-blue-800";
+                    statusEl.innerHTML = `<i class="ph ph-arrows-clockwise animate-spin text-sm"></i> Syncing...`;
                 }
 
                 rawEmpData = await fetchCsv(empUrl);
@@ -1051,31 +1271,25 @@
                 if (rawEmpData && rawEmpData.length > 0) {
                     let empCount = rawEmpData.filter(r => getCol(r, 'OP New Id', ['OPNewId'])).length;
                     
-                    // Save the current time filter so the UI doesn't reset while you are looking at it
-                    const timeSelect = document.getElementById('time-filter');
-                    const currentFilter = timeSelect.value;
-                    
                     populateFilters();
+                    applyFilters(); 
                     
-                    if (currentFilter && timeSelect.querySelector(`option[value="${currentFilter}"]`)) {
-                        timeSelect.value = currentFilter;
-                    }
+                    setTimeout(() => {
+                        statusEl.className = "flex items-center gap-1.5 text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200 dark:bg-emerald-900/30 dark:border-emerald-800";
+                        statusEl.innerHTML = `<span class="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span> Live Data`;
+                    }, 1000);
                     
-                    applyFilters(); // applyFilters handles updating both Sales and Pipeline charts automatically
-                    
-                    statusEl.innerHTML = `<span class="flex items-center gap-1 text-emerald-600 font-medium"><span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span> Connected to Live Sheet</span>`;
-                    document.getElementById('row-count').innerText = `${empCount} Records Scanned`;
+                    document.getElementById('row-count').innerHTML = `<i class="ph ph-rows mr-1"></i> ${empCount} Records Scanned`;
                 } else { throw new Error("Blocked"); }
             } catch (error) {
-                statusEl.innerHTML = `<span class="text-rose-500 font-medium">Google blocked live link - Please upload CSVs manually via Connect Data</span>`;
-                // Keep existing data on screen if network temporarily fails
+                statusEl.className = "flex items-center gap-1.5 text-rose-600 bg-rose-50 px-2 py-0.5 rounded-full border border-rose-200 dark:bg-rose-900/30 dark:border-rose-800";
+                statusEl.innerHTML = `<i class="ph-fill ph-warning-circle"></i> Connection Blocked`;
                 if (rawEmpData.length === 0) populateFilters(); 
             }
         }
 
         window.onload = () => {
             fetchAndRefreshData();
-            // Automatically refresh the data every 30 seconds
             setInterval(fetchAndRefreshData, 30000); 
         };
     </script>
